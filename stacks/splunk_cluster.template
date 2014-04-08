@@ -1,0 +1,462 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Create splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+    "VpcId" : {
+      "Type" : "String",
+      "Default": "vpc-",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
+    },
+
+    "SubnetId" : {
+      "Type" : "String",
+      "Default" : "subnet-",
+      "Description" : "SubnetId of an existing Public facing subnet in your Virtual Private Cloud (VPC)"
+    },
+
+    "ClusterSize" : {
+      "Description" : "Splunk Cluster size",
+      "Type" : "String",
+      "Default" : "small",
+      "AllowedValues" : [ "small", "medium", "large" ],
+      "ConstraintDescription" : "must be 'small', 'medium', or 'large.'",
+      "Description" : "Cluster size ('small' for 3 indexers, 'medium' for 5 or 'large' for 9 indexers)"
+    },
+
+    "InstanceType" : {
+      "Description" : "Splunk Server EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "CIDRBlock" : {
+      "Description": "Restrict incoming data from specified IP range (default can be received from anywhere)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "ChefServerIP" : {
+      "Type" : "String",
+      "Description" : "Chef-server IP or hostname"
+    },
+
+    "SplunkLicenseBucket" : {
+      "Description" : "[Optional] Name of private S3 bucket with licenses to be accessed via authenticated requests",
+      "Type" : "String"      
+    },
+
+    "SplunkLicensePath" : {
+      "Type" : "String",
+      "Description" : "[Optional] Path to license file in S3 Bucket"
+    }
+  },
+
+  "Mappings" : {
+    "AWSRegion2s3Bucket" : {
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
+      "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
+      "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
+      "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },
+      "sa-east-1" :      { "s3Bucket" : "https://splunk-cloud-sa-east-1.s3.amazonaws.com" },
+      "ap-northeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-northeast-1.s3.amazonaws.com" },
+      "ap-southeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-1.s3.amazonaws.com" },
+      "ap-southeast-2" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-2.s3.amazonaws.com" }
+    }
+  },
+
+  "Conditions" : {
+    "SkipLicenseMaster" : { "Fn::Equals" : [{ "Ref": "SplunkLicensePath" }, ""] },
+    "AddLicenseMaster" : { "Fn::Not" : [
+      { "Condition" : "SkipLicenseMaster" }
+    ]},
+    "MediumDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "medium"] },
+    "LargeDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "large"] },
+    "MediumOrLargeDeployment" : { "Fn::Or" : [
+      { "Condition": "MediumDeployment" },
+      { "Condition": "LargeDeployment" }
+    ]}
+  },
+
+  "Resources" : {
+
+    "SplunkClusterMasterSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable internal access for SSH, and Splunk management, and allow public HTTP/HTTPS access to Splunk web",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "8089", "ToPort" : "8089", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "CidrIp" : "0.0.0.0/0" }
+        ]
+      }
+    },
+
+    "SplunkSearchHeadSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable internal access for SSH and Splunk management, and allow public HTTP/HTTPS access to Splunk web",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "8089", "ToPort" : "8089", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "CidrIp" : "0.0.0.0/0" }
+        ]
+      }
+    },
+
+    "SplunkIndexerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable internal access for SSH and Splunk management/replication, and restrict public access to Splunk receiver",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "8089", "ToPort" : "8089", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9887", "ToPort" : "9887", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9997", "ToPort" : "9997", "CidrIp" : { "Ref" : "CIDRBlock"} }
+        ]
+      }
+    },
+
+    "MasterNode" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "AddLicenseMaster",
+      "Metadata" : {
+        "Comment" : "Splunk cluster master node + license master."
+      },
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server_with_license.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkClusterMasterSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkLicenseBucket" : { "Ref" : "SplunkLicenseBucket" },
+          "SplunkLicensePath" : { "Ref" : "SplunkLicensePath" },
+          "SplunkRole"     : "cluster-master",
+          "ResourceName"   : "MasterNode"
+        }
+      }
+    },
+
+    "MasterNode" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "SkipLicenseMaster",
+      "Metadata" : {
+        "Comment" : "Splunk cluster master node."
+      },
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkClusterMasterSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-master",
+          "ResourceName"   : "MasterNode"
+        }
+      }
+    },
+
+    "SearchHead" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Splunk cluster search head."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkSearchHeadSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-search-head",
+          "ResourceName"   : "SearchHead"
+        }
+      }
+    },
+
+    "PeerNode1" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 1."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode1"
+        }
+      }
+    },
+
+    "PeerNode2" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 2."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode2"
+        }
+      }
+    },
+
+    "PeerNode3" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 3."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode3"
+        }
+      }
+    },
+
+    "PeerNode4" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "MediumOrLargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 4."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode4"
+        }
+      }
+    },
+
+    "PeerNode5" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "MediumOrLargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 5."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode5"
+        }
+      }
+    },
+
+    "PeerNode6" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "LargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 6."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode6"
+        }
+      }
+    },
+
+    "PeerNode7" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "LargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 7."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode7"
+        }
+      }
+    },
+
+    "PeerNode8" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "LargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 8."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode8"
+        }
+      }
+    },
+
+    "PeerNode9" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "LargeDeployment",
+      "Metadata" : {
+        "Comment" : "Splunk cluster peer node 9."
+      },
+      "DependsOn" : "MasterNode",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "splunk_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Ref" : "VpcId" },
+          "SubnetId"       : { "Ref" : "SubnetId" },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ChefServerIP"   : { "Ref" : "ChefServerIP" },
+          "SplunkRole"     : "cluster-peer",
+          "ResourceName"   : "PeerNode9"
+        }
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "MasterNodeIpAddress" : {
+      "Value" : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PublicIp" ] },
+      "Description" : "Public IP address of cluster master"
+    },
+
+    "SearchHeadIpAddress" : {
+      "Value" : { "Fn::GetAtt" : [ "SearchHead", "Outputs.PublicIp" ] },
+      "Description" : "Public IP address of cluster search head"
+    },
+
+    "PeerNodesIpAddresses" : {
+      "Value" : {
+        "Fn::If" : [
+          "LargeDeployment",
+          { "Fn::Join" : [", ", [
+            { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode6", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode7", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode8", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode9", "Outputs.PublicIp" ] }
+          ]]},
+          { "Fn::If" : [
+              "MediumDeployment",
+              { "Fn::Join" : [", ", [
+                { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] }
+              ]]},
+              { "Fn::Join" : [", ", [
+                { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] }
+              ]]}
+            ]
+          }
+        ]
+      },
+      "Description" : "List of public IP address of all cluster peer nodes"
+    }
+  }
+}

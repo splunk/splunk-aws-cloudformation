@@ -1,0 +1,272 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Add a Bastion host to an existing VPC. VPC must have an internet gateway already. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+    "VpcId" : {
+      "Type" : "String",
+      "Default" : "vpc-",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
+    },
+
+    "SubnetId" : {
+      "Type" : "String",
+      "Default" : "subnet-",
+      "Description" : "SubnetId of an existing Public facing subnet in your Virtual Private Cloud (VPC)"
+    },
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "BastionKeyName" : {
+      "Description" : "Name of the EC2 KeyPair we will create internally to access instances in our VPC",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "SSHFrom" : {
+      "Description": "Lockdown SSH access to the instance (default can be accessed from anywhere)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "ResourceName" : {
+      "Description" : "The Logical Resource Name - commonly set by parent stack",
+      "Type": "String",
+      "Default": "BastionHost",
+      "MinLength": "1",
+      "MaxLength": "128",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "64" },
+      "m1.medium"   : { "Arch" : "64" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "c1.medium"   : { "Arch" : "64" },
+      "c1.xlarge"   : { "Arch" : "64" }
+    },
+
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : { "64" : "ami-3275ee5b" },
+      "us-west-1"      : { "64" : "ami-66d1fc23" },
+      "us-west-2"      : { "64" : "ami-ecbe2adc" },
+      "eu-west-1"      : { "64" : "ami-44939930" },
+      "sa-east-1"      : { "64" : "ami-dd6bb0c0" },
+      "ap-southeast-1" : { "64" : "ami-aa9ed2f8" },
+      "ap-southeast-2" : { "64" : "ami-363eaf0c" },
+      "ap-northeast-1" : { "64" : "ami-173fbf16" }
+    }
+  },
+
+  "Resources" : {
+    "CfnUser": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Path": "/",
+          "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Statement": [
+              {
+                "Effect" : "Allow",
+                "Action": [
+                  "ec2:CreateKeyPair",
+                  "ec2:DescribeKeyPairs",
+                  "ec2:DescribeRegions",
+                  "ec2:ImportKeyPair"
+                ],
+                "Resource" : "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "cloudformation:DescribeStackResource",
+                "Resource": "*"
+              }]
+            }
+          }
+        ]
+      }
+    },
+    "CfnKeys": {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "UserName": {
+          "Ref": "CfnUser"
+        }
+      }
+    },
+
+    "BastionSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable SSH access via port 22",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22",  "ToPort" : "22",  "CidrIp" : { "Ref" : "SSHFrom" }}
+        ]
+      }
+    },
+
+    "BastionHost" : {
+      "Type" : "AWS::EC2::Instance",
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+            "config": {
+              "packages": {
+                "yum": {
+                  "python-boto": []
+                }
+              },
+              "files": {
+               "/home/ec2-user/create-keypair" : {
+                "content" : {
+                  "Fn::Join" : ["", ["#!/usr/bin/python\n",
+                   "import string\n",
+                   "import random\n",
+                   "import boto.ec2\n",
+                   "kp_name = '",{ "Ref" : "BastionKeyName" },"'\n",
+                   "ec2 = boto.ec2.connect_to_region('", {"Ref" : "AWS::Region" }, "')\n",
+                   "keypair = ec2.create_key_pair(kp_name)\n",
+                   "keypair.save('/home/ec2-user/.ssh/')\n",
+                   "print 'Created keypair: %s' % kp_name\n"]]
+                },
+              "mode" : "000750",
+              "owner" : "ec2-user",
+              "group" : "ec2-user"
+              },
+              "/home/ec2-user/.boto": {
+                "content": {
+                  "Fn::Join": ["", [ "[Credentials]\n",
+                    "aws_access_key_id = ", { "Ref": "CfnKeys" }, "\n",
+                    "aws_secret_access_key = ", { "Fn::GetAtt": ["CfnKeys", "SecretAccessKey"] }, "\n",
+                    "[Boto]\n",
+                    "ec2_region_name = ", { "Ref" : "AWS::Region" }, "\n",
+                    "ec2_region_endpoint = ec2.", { "Ref" : "AWS::Region" }, ".amazonaws.com\n"]]
+                },
+                "mode": "000600",
+                "owner": "ec2-user",
+                "group": "ec2-user"
+              },
+              "/etc/chef/client-attribs.json" : {
+                "content" : { "Fn::Join" : ["", [
+                  "{\"run_list\": [ \"role[<put role here>]\" ]}"
+                ]]},
+                "mode" : "000644",
+                "owner" : "chef",
+                "group" : "root"
+              }
+            },
+            "commands" : {
+              "00create-keypair" : {
+                "command" : ["su", "ec2-user", "-c", "python create-keypair"],
+                "cwd" : "/home/ec2-user"
+              }
+            }
+          }
+        }
+      },
+      "Properties" : {
+        "InstanceType" : "t1.micro",
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
+        "NetworkInterfaces" : [{
+          "GroupSet"                 : [{ "Ref" : "BastionSecurityGroup" }],
+          "AssociatePublicIpAddress" : "true",
+          "DeviceIndex"              : "0",
+          "DeleteOnTermination"      : "true",
+          "SubnetId"                 : { "Ref" : "SubnetId" }
+        }],
+        "KeyName" : { "Ref" : "KeyName" },
+        "Tags": [
+           { "Key" : "Name", "Value" : { "Ref" : "ResourceName" } }
+        ],
+        "UserData": {
+          "Fn::Base64" : { "Fn::Join" : ["", [
+                "#!/bin/bash -v\n",
+                "yum update -y aws-cfn-bootstrap\n",
+
+                "#do some chef things before the cfn-init due to race issues\n",
+                "/bin/mkdir -p /etc/chef\n",
+                "/bin/mkdir -p /var/lib/chef\n",
+                "/bin/mkdir -p /var/log/chef\n",
+                "/usr/sbin/groupadd chef -r\n",
+                "/usr/sbin/useradd chef -r -s /bin/sh -d /var/lib/chef -g chef\n",
+
+                "# Helper function\n",
+                "function error_exit\n",
+                "{\n",
+                "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "BastionHostHandle" }, "'\n",
+                "  exit 1\n",
+                "}\n",
+
+                "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r BastionHost ",
+                "    --access-key ",  { "Ref" : "CfnKeys" },
+                "    --secret-key ", {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+                "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
+
+                "#install chef client for later\n",
+                "curl -L http://www.opscode.com/chef/install.sh | bash\n",
+                "cd /etc/chef\n",
+                "/bin/chown -R chef:chef /etc/chef\n",
+
+                "# All is well so signal success\n",
+                "/opt/aws/bin/cfn-signal -e 0 -r \"Bastion host setup complete\" '", { "Ref" : "BastionHostHandle" }, "'\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "BastionHostHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+    "ControllerCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "BastionHost",
+      "Properties" : {
+        "Handle" : { "Ref" : "BastionHostHandle" },
+        "Timeout" : "900"
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "InstanceID" : {
+      "Value" : {"Ref": "BastionHost"},
+      "Description" : "Bastion Instance ID"
+    },
+
+    "PublicIp" : {
+      "Value" : {"Fn::GetAtt" : [ "BastionHost", "PublicIp" ]},
+      "Description" : "Public IP address of instance"
+    },
+
+    "BastionKeyName" : {
+      "Value" : { "Ref" : "BastionKeyName" },
+      "Description" : "Internal bastion KeyPair name"
+    }
+  }
+}

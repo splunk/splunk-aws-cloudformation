@@ -1,0 +1,188 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Build an AWS VPC with Public and Private subnets with a NAT in a single AZ. This includes a Bastion host micro instance in Public subnet and a Chef server in Private subnet. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the Bastion host",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "BastionKeyName" : {
+      "Description" : "Name of the EC2 KeyPair we will create internally to access instances in our VPC from the Bastion host",
+      "Type" : "String",
+      "Default" : "bastion_key",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "InstanceType" : {
+      "Description" : "Chef Server EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "SSHFrom" : {
+      "Description": "Lockdown SSH access to NAT instance (default can be accessed from anywhere)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+    }
+  },
+
+  "Mappings" : {
+
+    "AWSRegion2s3Bucket" : {
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
+      "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
+      "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
+      "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },
+      "sa-east-1" :      { "s3Bucket" : "https://splunk-cloud-sa-east-1.s3.amazonaws.com" },
+      "ap-northeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-northeast-1.s3.amazonaws.com" },
+      "ap-southeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-1.s3.amazonaws.com" },
+      "ap-southeast-2" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-2.s3.amazonaws.com" }
+    },
+
+    "AWSInstanceType2Arch" : {
+       "t1.micro"    : { "Arch" : "64" },
+       "m1.small"    : { "Arch" : "64" },
+       "m1.medium"   : { "Arch" : "64" },
+       "m1.large"    : { "Arch" : "64" },
+       "m1.xlarge"   : { "Arch" : "64" },
+       "m2.xlarge"   : { "Arch" : "64" },
+       "m2.2xlarge"  : { "Arch" : "64" },
+       "m2.4xlarge"  : { "Arch" : "64" },
+       "c1.medium"   : { "Arch" : "64" },
+       "c1.xlarge"   : { "Arch" : "64" }
+     },
+
+     "AWSRegionArch2AMINAT" : {
+       "us-east-1"      : { "64" : "ami-f619c29f" },
+       "us-west-1"      : { "64" : "ami-3bcc9e7e" },
+       "us-west-2"      : { "64" : "ami-52ff7262" },
+       "eu-west-1"      : { "64" : "ami-e5e2d991" },
+       "sa-east-1"      : { "64" : "ami-0039e61d" },
+       "ap-southeast-1" : { "64" : "ami-02eb9350" },
+       "ap-northeast-1" : { "64" : "ami-14d86d15" }
+     }
+  },
+
+  "Resources" : {
+
+    "VPC" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "VPC with Public & Private subnets + NAT instance."
+      },
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                         "cloudformation-templates", "vpc_two_subnets.template" ]]},
+        "Parameters" : {
+          "KeyName" : { "Ref" : "KeyName" },
+          "SSHFrom" : { "Ref" : "SSHFrom" }
+        },
+        "Tags": [
+           { "Key" : "Name", "Value" : "Splunk Cluster VPC" }
+        ]
+      }
+    },
+
+    "BastionHost" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Bastion host in Public subnet."
+      },
+      "DependsOn" : "VPC",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "bastion_host.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
+          "SubnetId"       : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+          "KeyName"        : { "Ref" : "KeyName" },
+          "BastionKeyName" : { "Ref" : "BastionKeyName" },
+          "SSHFrom"        : { "Ref" : "SSHFrom" }
+        }
+      }
+    },
+
+    "ChefServer" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Metadata" : {
+        "Comment" : "Chef Server in Private subnet."
+      },
+      "DependsOn" : "BastionHost",
+      "Properties" : {
+        "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
+                          "cloudformation-templates", "chef_server.template" ]]},
+        "Parameters" : {
+          "VpcId"          : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
+          "SubnetId"       : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnetID" ] },
+          "InstanceType"   : { "Ref" : "InstanceType" },
+          "KeyName"        : { "Ref" : "BastionKeyName" }
+        }
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "VpcID" : {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
+      "Description" : "VPC ID of newly created VPC"
+    },
+
+    "PublicSubnetID" :  {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+      "Description" : "Public subnet ID"
+    },
+
+    "PrivateSubnetID" : {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnetID" ] },
+      "Description" : "Private Subnet ID"
+    },
+
+    "NATDeviceID" : {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.NATDeviceID" ] },
+      "Description" : "NAT Instance ID"
+    },
+
+    "BastionInstanceID" : {
+      "Value" : { "Fn::GetAtt" : ["BastionHost", "Outputs.InstanceID" ] },
+      "Description" : "Bastion Host Instance ID"
+    },
+
+    "BastionPublicIp" : {
+      "Value" : {"Fn::GetAtt" : [ "BastionHost", "Outputs.PublicIp" ]},
+      "Description" : "Bastion Host Public IP address"
+    },
+    
+    "BastionKeyName" : {
+      "Value" : { "Ref" : "BastionKeyName" },
+      "Description" : "Bastion Internal KeyPair name"
+    },
+
+    "ChefInstanceID" : {
+      "Value" : { "Fn::GetAtt" : ["ChefServer", "Outputs.InstanceID" ] },
+      "Description" : "Chef Server Instance ID"
+    },
+
+    "ChefServerPrivateIp" : {
+      "Value" : {"Fn::GetAtt" : [ "ChefServer", "Outputs.PrivateIp" ] },
+      "Description" : "Chef Server Private IP address"
+    }
+  }
+}

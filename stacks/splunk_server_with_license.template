@@ -1,0 +1,327 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Add a splunk server to your VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+    "VpcId" : {
+      "Type" : "String",
+      "Default" : "vpc-",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
+    },
+
+    "SubnetId" : {
+      "Type" : "String",
+      "Default" : "subnet-",
+      "Description" : "SubnetId of an existing Public or Private subnet in your Virtual Private Cloud (VPC)"
+    },
+
+    "InstanceType" : {
+      "Description" : "Splunk Server EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances (use bastion KeyPair if available)",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "ResourceName" : {
+      "Description" : "The Logical Resource Name - commonly set by parent stack",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+    },
+
+    "AssociatePublicIP" : {
+      "Description" : "Indicates whether the server receives a public IP address",
+      "Type": "String",
+      "Default": "yes",
+      "AllowedValues": [ "yes", "no" ],
+      "ConstraintDescription": "must be 'yes' or 'no'"
+    },
+
+    "ChefServerIP" : {
+      "Type" : "String",
+      "Description" : "Chef-server IP or hostname"
+    },
+
+    "SplunkRole" : {
+      "Description" : "Chef Splunk role to assign to this instance",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedValues" : [ "Splunk-server", "Splunk-indexer", "Splunk-searcher", "cluster-master", "cluster-peer", "cluster-search-head" ],
+      "ConstraintDescription" : "must be a valid Chef role for Splunk."
+    },
+
+    "SplunkLicenseBucket" : {
+      "Description" : "Name of private S3 bucket with licenses to be accessed via authenticated requests",
+      "Type" : "String"      
+    },
+
+    "SplunkLicensePath" : {
+      "Type" : "String",
+      "Description" : "Path to license file in S3 Bucket"
+    }
+  },
+
+  "Conditions" : {
+    "AssociatePublicIpAddress" : {
+      "Fn::Equals" : [
+        {"Ref" : "AssociatePublicIP"},
+        "yes"
+      ]
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "64" },
+      "m1.medium"   : { "Arch" : "64" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "c1.medium"   : { "Arch" : "64" },
+      "c1.xlarge"   : { "Arch" : "64" },
+      "cc1.4xlarge" : { "Arch" : "64" }
+    },
+
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : { "64" : "ami-bba18dd2" },
+      "us-west-1"      : { "64" : "ami-a43909e1" },
+      "us-west-2"      : { "64" : "ami-ccf297fc" },
+      "eu-west-1"      : { "64" : "ami-5256b825" },
+      "sa-east-1"      : { "64" : "ami-c99130d4" },
+      "ap-southeast-1" : { "64" : "ami-b4baeee6" },
+      "ap-southeast-2" : { "64" : "ami-5ba83761" },
+      "ap-northeast-1" : { "64" : "ami-0d13700c" }
+    }
+  },
+
+  "Resources" : {
+
+    "CfnUser" : {
+      "Type" : "AWS::IAM::User",
+      "Properties" : {
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": { "Statement":[{
+            "Effect":"Allow",
+            "Action": [
+              "cloudformation:DescribeStackResource",
+              "s3:GetObject"
+            ],
+            "Resource":"*"
+          }]}
+        }]
+      }
+    },
+
+    "CfnKeys" : {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref": "CfnUser"}
+      }
+    },
+
+    "BucketPolicy" : {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "PolicyDocument": {
+          "Version"      : "2008-10-17",
+          "Id"           : "MyPolicy",
+          "Statement"    : [{
+            "Sid"        : "ReadAccess",
+            "Action"     : ["s3:GetObject"],
+            "Effect"     : "Allow",
+            "Resource"   : { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "SplunkLicenseBucket" }, "/*"]]},
+            "Principal"  : { "AWS": {"Fn::GetAtt" : ["CfnUser", "Arn"]} }
+          }]
+        },
+        "Bucket" : { "Ref" : "SplunkLicenseBucket" }
+      }
+    },
+
+    "SplunkServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable SSH access via port 22, HTTP access via port 80, and Splunk ports 8089, 9997 & 9887 respectively for management, receiving, and replication",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "8089", "ToPort" : "8089", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9997", "ToPort" : "9997", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9887", "ToPort" : "9887", "CidrIp" : "192.168.0.0/16" }
+        ]
+      }
+    },
+
+    "SplunkServerHost" : {
+      "Type" : "AWS::EC2::Instance",
+      "DependsOn": "BucketPolicy",
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+            "files" : {
+              "/etc/chef/client-attribs.json" : {
+                "content" : { "Fn::Join" : ["", [
+                  "{\n",
+                  "  \"override_attributes\": {\n",
+                  "    \"splunk\": {\n",
+                  "      \"license_path\": \"/etc/splunk/enterprise.license\",\n",
+                  "      \"dedicated_license_master\": \"127.0.0.1\"\n",
+                  "    }\n",
+                  "  },\n",
+                  "  \"chef_type\": \"role\",\n",
+                  "  \"run_list\": [\n",
+                  "    \"role[", { "Ref" : "SplunkRole" }, "]\"\n",
+                  "  ]\n",
+                  "}"
+                ]]},
+                "mode" : "000644",
+                "owner" : "chef",
+                "group" : "root"
+              },
+              "/etc/splunk/enterprise.license" : {
+                "source" : { "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              }
+            }
+          }
+        },
+        "AWS::CloudFormation::Authentication" : {
+          "S3AccessCreds" : {
+            "type" : "S3",
+            "accessKeyId" : { "Ref" : "CfnKeys" },
+            "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+            "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
+          }
+        }
+      },
+      "Properties" : {
+        "InstanceType" : { "Ref" : "InstanceType" },
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
+        "NetworkInterfaces" : [{
+          "GroupSet"                 : [{ "Ref" : "SplunkServerSecurityGroup" }],
+          "AssociatePublicIpAddress" : "true",
+          "DeviceIndex"              : "0",
+          "DeleteOnTermination"      : "true",
+          "SubnetId"                 : { "Ref" : "SubnetId" }
+        }],
+        "KeyName" : { "Ref" : "KeyName" },
+        "Tags": [
+           { "Key" : "Role", "Value": { "Ref" : "SplunkRole"} },
+           { "Key" : "Name", "Value" : { "Ref" : "ResourceName"} }
+        ],
+        "UserData": {
+          "Fn::Base64" : { "Fn::Join" : ["", [
+                "#!/bin/bash -v\n",
+                "yum update -y aws-cfn-bootstrap\n",
+
+                "#placeholder for enterprise license\n",
+                "/bin/mkdir -p /etc/splunk\n",
+
+                "#do some chef things before the cfn-init due to race issues\n",
+                "/bin/mkdir -p /etc/chef\n",
+                "/bin/mkdir -p /var/lib/chef\n",
+                "/bin/mkdir -p /var/log/chef\n",
+                "/usr/sbin/groupadd chef -r\n",
+                "/usr/sbin/useradd chef -r -s /bin/sh -d /var/lib/chef -g chef\n",
+
+                "# Helper function\n",
+                "function error_exit\n",
+                "{\n",
+                "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+                "  exit 1\n",
+                "}\n",
+
+                "function retry {\n",
+                "   nTrys=0\n",
+                "   maxTrys=5\n",
+                "   status=256\n",
+                "   until [ $status == 0 ] ; do\n",
+                "      $1\n",
+                "      status=$?\n",
+                "      nTrys=$(($nTrys + 1))\n",
+                "      if [ $nTrys -gt $maxTrys ] ; then\n",
+                "            echo \"Number of re-trys exceeded. Exit code: $status\"\n",
+                "            exit $status\n",
+                "      fi\n",
+                "      if [ $status != 0 ] ; then\n",
+                "            echo \"Failed (exit code $status)... retry $nTrys\"\n",
+                "            sleep 10\n",
+                "      fi\n",
+                "   done\n",
+                "}\n",
+
+                "retry \"/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackId" }, " -r SplunkServerHost ",
+                "    --access-key ",  { "Ref" : "CfnKeys" },
+                "    --secret-key ", {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+                "    --region ", { "Ref" : "AWS::Region" }, "\" || error_exit 'Failed to run cfn-init'\n",
+
+                "#set HOME variable needed by splunk to cache Auth tokens\n",
+                "export HOME=\"/root\"\n",
+
+                "#install chef client for later\n",
+                "curl -L http://www.opscode.com/chef/install.sh | bash\n",
+                "/usr/bin/wget http://",{ "Ref" : "ChefServerIP" },"/chef/chefme.sh -O /tmp/chefme.sh\n",
+                "/bin/sh /tmp/chefme.sh || error_exit 'Failed to run chef-client'\n",
+
+                "# All is well so signal success\n",
+                "/opt/aws/bin/cfn-signal -e 0 -r \"Splunk server setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+    "WaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+
+    "WaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "SplunkServerHost",
+      "Properties" : {
+        "Handle" : {"Ref" : "WaitHandle"},
+        "Timeout" : "1200"
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "InstanceID" : {
+      "Value" : {"Ref": "SplunkServerHost"},
+      "Description" : "Splunk Server Instance ID"
+    },
+
+    "PrivateIp" : {
+      "Value" : {"Fn::GetAtt" : [ "SplunkServerHost", "PrivateIp" ]},
+      "Description" : "Private IP address of instance"
+    },
+
+    "PublicIp" : {
+      "Condition" : "AssociatePublicIpAddress",
+      "Value" : {"Fn::GetAtt" : [ "SplunkServerHost", "PublicIp" ]},
+      "Description" : "Public IP address of instance"
+    }
+  }
+}

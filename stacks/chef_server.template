@@ -1,0 +1,317 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Add a Chef server to a VPC environment. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+    "VpcId" : {
+      "Type" : "String",
+      "Default" : "vpc-",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
+    },
+
+    "SubnetId" : {
+      "Type" : "String",
+      "Default" : "subnet-",
+      "Description" : "SubnetId of an existing Private subnet in your Virtual Private Cloud (VPC)"
+    },
+
+    "InstanceType" : {
+      "Description" : "Chef Server EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances (use bastion KeyPair if available)",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "ResourceName" : {
+      "Description" : "The Logical Resource Name - commonly set by parent stack",
+      "Type": "String",
+      "Default": "ChefServer",
+      "MinLength": "1",
+      "MaxLength": "128",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "64" },
+      "m1.medium"   : { "Arch" : "64" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "c1.medium"   : { "Arch" : "64" },
+      "c1.xlarge"   : { "Arch" : "64" },
+      "cc1.4xlarge" : { "Arch" : "64" }
+    },
+
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : { "64" : "ami-3275ee5b" },
+      "us-west-1"      : { "64" : "ami-66d1fc23" },
+      "us-west-2"      : { "64" : "ami-ecbe2adc" },
+      "eu-west-1"      : { "64" : "ami-44939930" },
+      "sa-east-1"      : { "64" : "ami-dd6bb0c0" },
+      "ap-southeast-1" : { "64" : "ami-aa9ed2f8" },
+      "ap-southeast-2" : { "64" : "ami-363eaf0c" },
+      "ap-northeast-1" : { "64" : "ami-173fbf16" }
+    }
+  },
+
+  "Resources" : {
+
+    "CfnUser" : {
+      "Type" : "AWS::IAM::User",
+      "Properties" : {
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": { "Statement":[{
+            "Effect":"Allow",
+            "Action": [
+              "cloudformation:DescribeStackResource",
+              "s3:GetObject"
+            ],
+            "Resource":"*"
+          }]}
+        }]
+      }
+    },
+
+    "CfnKeys" : {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref": "CfnUser"}
+      }
+    },
+
+    "ChefServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable SSH access via port 22, and HTTP access via 80 & 4000",
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "4000", "ToPort" : "4000", "CidrIp" : "192.168.0.0/16" }
+        ]
+      }
+    },
+
+    "ChefServerHost" : {
+      "Type" : "AWS::EC2::Instance",
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+            "packages" : {
+              "yum" : {
+                "gcc" : [],
+                "gcc-c++" : [],
+                "make" : [],
+                "automake" : [],
+                "autoconf" : [],
+                "ruby19" : [],
+                "ruby19-devel" : [],
+                "ruby19-irb" : [],
+                "rubygems19" : [],
+                "rubygem19-rdoc" : [],
+                "rubygem19-rake" : [],
+                "zlib-devel" : [],
+                "kernel-devel" : [],
+                "flex" : [],
+                "bison" : [],
+                "mlocate" : [],
+                "httpd" : [],
+                "python-boto": [],
+                "git" : []
+              }
+            },
+            "files" : {
+              "/etc/yum.repos.d/epel.repo" : {
+                "source" : "https://splunk-cloud.s3.amazonaws.com/amazon-linux/enable-epel-on-amazon-linux-ami",
+                "mode"  : "000644",
+                "owner" : "root",
+                "group" : "root"
+              },
+              "/etc/chef/client-attribs.json" : {
+                "content" : { "Fn::Join" : ["", [
+                  "{\"run_list\": [ \"role[Chef-server]\" ]}"
+                ]]},
+                "mode" : "000644",
+                "owner" : "chef",
+                "group" : "root"
+              }
+            },
+            "sources" : {
+              "/home/ec2-user/chefrepo/" : "https://splunk-cloud.s3.amazonaws.com/chefrepo.tar.gz"
+            }
+          }
+        }
+      },
+      "Properties" : {
+        "InstanceType" : { "Ref" : "InstanceType" },
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
+        "SecurityGroupIds" : [{ "Ref" : "ChefServerSecurityGroup" }],
+        "SubnetId" : { "Ref" : "SubnetId" },
+        "KeyName" : { "Ref" : "KeyName" },
+        "Tags": [
+           { "Key" : "Name", "Value" : { "Ref" : "ResourceName"} }
+        ],
+        "UserData": {
+          "Fn::Base64" : { "Fn::Join" : ["", [
+                "#!/bin/bash -v\n",
+
+                "#enable epel here as a test\n",
+                "yum-config-manager --enablerepo=epel\n",
+                "yum update -y aws-cfn-bootstrap\n",
+
+                "#do some chef things before the cfn-init due to race issues\n",
+                "/bin/mkdir -p /etc/chef\n",
+                "/bin/mkdir -p /var/lib/chef\n",
+                "/bin/mkdir -p /var/log/chef\n",
+                "/usr/sbin/groupadd chef -r\n",
+                "/usr/sbin/useradd chef -r -s /bin/sh -d /var/lib/chef -g chef\n",
+
+                "#setup some basic config files we'll need\n",
+                "wget https://splunk-cloud.s3.amazonaws.com/config/chef.json -O /etc/chef/chef.json\n",
+                "wget https://splunk-cloud.s3.amazonaws.com/config/solo.rb -O /etc/chef/solo.rb\n",
+                "wget https://splunk-cloud.s3.amazonaws.com/config/client.rb -O /etc/chef/client.rb\n",
+
+                "#set the ip in the client.rb so we can chef ourselves and others\n",
+                "MYIP=$(/sbin/ifconfig eth0 | grep \"inet addr\" | awk -F: '{print $2}' | awk '{print $1}')\n",
+                "/bin/sed -i \"s/0.0.0.0/$MYIP/g\" /etc/chef/client.rb\n",
+
+                "# Helper function\n",
+                "function error_exit\n",
+                "{\n",
+                "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+                "  exit 1\n",
+                "}\n",
+
+                "function retry {\n",
+                "   nTrys=0\n",
+                "   maxTrys=5\n",
+                "   status=256\n",
+                "   until [ $status == 0 ] ; do\n",
+                "      $1\n",
+                "      status=$?\n",
+                "      nTrys=$(($nTrys + 1))\n",
+                "      if [ $nTrys -gt $maxTrys ] ; then\n",
+                "            echo \"Number of re-trys exceeded. Exit code: $status\"\n",
+                "            exit $status\n",
+                "      fi\n",
+                "      if [ $status != 0 ] ; then\n",
+                "            echo \"Failed (exit code $status)... retry $nTrys\"\n",
+                "            sleep 10\n",
+                "      fi\n",
+                "   done\n",
+                "}\n",
+
+                "retry \"/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r ChefServerHost ",
+                "    --access-key ",  { "Ref" : "CfnKeys" },
+                "    --secret-key ", {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+                "    --region ", { "Ref" : "AWS::Region" }, "\" || error_exit 'Failed to run cfn-init'\n",
+
+                "#Ruby 1.8 doesn't quite cut it with the latest versions of chef. uninstall them and install 1.9\n",
+                "yum erase -y ruby-libs ruby-1.8.7\n",
+                "yum update -y \n",
+                "ln -sf /usr/bin/ruby1.9 /usr/bin/ruby \n",
+                "ln -sf /usr/bin/rake1.9 /usr/bin/rake\n",
+                "ln -sf /usr/bin/rdoc1.9 /usr/bin/rdoc\n",
+                "ln -sf /usr/bin/irb1.9 /usr/bin/irb\n",
+                "ln -sf /usr/bin/gem1.9 /usr/bin/gem\n",
+
+                "yum install -y couchdb js\n",
+
+                "#chef needs the gecode package, but its broken in epel for ALinux. install from rbel instead\n",
+                "yum install -y https://splunk-cloud.s3.amazonaws.com/amazon-linux/gecode-3.5.0-1.el6.x86_64.rpm\n",
+                "yum install -y https://splunk-cloud.s3.amazonaws.com/amazon-linux/gecode-devel-3.5.0-1.el6.x86_64.rpm\n",
+                "/sbin/ldconfig\n",
+
+                "#bug in chef installer puts things in the wrong places, this fixes that\n",
+                "ln -s /usr/local/bin/chef-solr /usr/bin/chef-solr\n",
+                "ln -s /usr/local/bin/chef-expander /usr/bin/chef-expander\n",
+                "ln -s /usr/local/bin/chef-server /usr/bin/chef-server\n",
+
+                "#instead of letting the bootstrap install things, we do it here first\n",
+                "gem install chef --version 10.24.0 --no-ri --no-rdoc\n",
+                "gem install ohai --no-ri --no-rdoc\n",
+                "gem install eventmachine --version 0.12.10 --no-ri --no-rdoc\n",
+                "gem install em-http-request --version 0.2.11 --no-ri --no-rdoc\n",
+
+                "#need to do some manual linking here to fix an issue w/ em-http-request which has a bug of some sort on ALinux. making these links makes it work.\n",
+                "GEMFOLDER=\"/usr/local/share/gems/gems\"\n",
+                "EMVERSION=\"0.2.11\"\n",
+                "ln -s ${GEMFOLDER}/em-http-request-${EMVERSION}/ext/http11_client/http11_client.so ${GEMFOLDER}/em-http-request-${EMVERSION}/lib\n",
+                "ln -s ${GEMFOLDER}/em-http-request-${EMVERSION}/ext/buffer/em_buffer.so ${GEMFOLDER}/em-http-request-${EMVERSION}/lib\n",
+                "gem install chef-expander --no-ri --no-rdoc\n",
+
+                "#here we go! install the custom chefbootstrap\n",
+                "chown -R chef /etc/chef/*\n",
+                "/usr/local/bin/chef-solo -c /etc/chef/solo.rb -j /etc/chef/chef.json -r https://splunk-cloud.s3.amazonaws.com/chefbootstrap.tar.gz\n",
+
+                "sleep 60\n",
+                "#need to make validation.pem available for clients\n",
+                "/bin/mkdir -p /var/www/html/chef\n",
+                "/bin/cp /etc/chef/validation.pem /var/www/html/chef\n",
+                "/bin/cp /etc/chef/client.rb /var/www/html/chef\n",
+                "wget https://splunk-cloud.s3.amazonaws.com/config/chefme.sh -O /var/www/html/chef/chefme.sh\n",
+                "/bin/sed -i \"s/0.0.0.0/$MYIP/g\" /var/www/html/chef/chefme.sh\n",
+                "/bin/chmod -R 755 /var/www/html/chef\n",
+                "/etc/init.d/httpd start\n",
+                "/bin/sed -i \"s/192.168.1.116/$MYIP/g\" /home/ec2-user/chefrepo/cookbooks/chef/recipes/chef-client.rb\n",
+                "chown -R ec2-user:ec2-user /home/ec2-user/chefrepo\n",
+
+                "#configure knife and populate Chef with cookbooks & roles\n",
+                "wget https://splunk-cloud.s3.amazonaws.com/config/setupchef.sh -O /etc/chef/setupchef.sh\n",
+                "/bin/sh /etc/chef/setupchef.sh || error_exit 'Failed to run setupchef.sh'\n",
+
+                "# All is well so signal success\n",
+                "/opt/aws/bin/cfn-signal -e 0 -r \"Chef server setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+    "WaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+
+    "WaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "ChefServerHost",
+      "Properties" : {
+        "Handle" : {"Ref" : "WaitHandle"},
+        "Timeout" : "1800"
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "InstanceID" : {
+      "Value" : {"Ref": "ChefServerHost"},
+      "Description" : "Chef Server Instance ID"
+    },
+
+    "PrivateIp" : {
+      "Value" : {"Fn::GetAtt" : [ "ChefServerHost", "PrivateIp" ]},
+      "Description" : "Private IP address of instance"
+    }
+
+  }
+}
