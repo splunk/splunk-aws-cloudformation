@@ -122,6 +122,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
     ```
 
 3. When stack is complete, retrieve its outputs and record the VPC ID, Public Subnet IDs, as well as Bastion's public IP and Chef server's private IP:
+
         $ aws cloudformation describe-stacks --stack-name customerVPC-test
 
     You should get something similar to:
