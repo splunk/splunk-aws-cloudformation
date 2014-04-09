@@ -66,7 +66,7 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 </div>
 8. Type IP of cluster master in your favorite browser, and navigate to Settings >> Clustering to see all components of your newly created Splunk cluster. In few minutes, the cluster will become valid & complete as soon as initial index replication completes:
 <div>
-    <img src="//raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/splunk_clustering_snapshot.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/splunk_clustering_snapshot.png"/>
 </div>
 
 Congratulations! You now have a new fully functional distributed Splunk cluster on AWS ready for your data!<br/>
