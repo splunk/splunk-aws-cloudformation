@@ -1,4 +1,4 @@
-# Splunk CloudFormation Templates #
+# Splunk AWS CloudFormation Templates #
 
 Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk distributed cluster on AWS.
 
