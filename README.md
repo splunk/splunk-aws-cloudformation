@@ -4,7 +4,7 @@ Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk distr
 
 ## Benefits ##
 
-* Incorporates **best practices** for IT operations and Splunk administration
+* Incorporates Splunk **best practices** for operations and administration
 * **Hides all complexity** behind setting up distributed Splunk infrastructure
 * **Extensible** and **customizable** templates to fit custom needs
 * **Accelerates** test drive & deployment time down to minutes
