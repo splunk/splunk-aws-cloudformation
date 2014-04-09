@@ -246,8 +246,8 @@
                 "ln -s /usr/local/bin/chef-server /usr/bin/chef-server\n",
 
                 "#instead of letting the bootstrap install things, we do it here first\n",
+                "gem install ohai --version 6.20.0 --no-ri --no-rdoc\n",
                 "gem install chef --version 10.24.0 --no-ri --no-rdoc\n",
-                "gem install ohai --no-ri --no-rdoc\n",
                 "gem install eventmachine --version 0.12.10 --no-ri --no-rdoc\n",
                 "gem install em-http-request --version 0.2.11 --no-ri --no-rdoc\n",
 
@@ -256,7 +256,7 @@
                 "EMVERSION=\"0.2.11\"\n",
                 "ln -s ${GEMFOLDER}/em-http-request-${EMVERSION}/ext/http11_client/http11_client.so ${GEMFOLDER}/em-http-request-${EMVERSION}/lib\n",
                 "ln -s ${GEMFOLDER}/em-http-request-${EMVERSION}/ext/buffer/em_buffer.so ${GEMFOLDER}/em-http-request-${EMVERSION}/lib\n",
-                "gem install chef-expander --no-ri --no-rdoc\n",
+                "gem install chef-expander --version 10.24.0 --no-ri --no-rdoc\n",
 
                 "#here we go! install the custom chefbootstrap\n",
                 "chown -R chef /etc/chef/*\n",
