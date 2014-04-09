@@ -36,7 +36,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
 5. Click **Next Step** button. In the **Review** step, ensure all parameters are correct, and click **Create**. Grab a coffee and come back in ~20 min when status of your parent stack shows `CREATE_COMPLETE`. Note this is a one-time setup.
 5. Select **Outputs** tab of this newly created stack and record the VPC ID, Public Subnet IDs, as well as Bastion's public IP and Chef server's private IP:
 <div>
-    <img src="//github.com/splunk/cloud-formation/raw/master/docs/vpc_master_output.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/vpc_master_output.png"/>
 </div>
 
 ### Step 2: Create Splunk Cluster ###
@@ -62,17 +62,17 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 6. Click **Next Step** button. In the **Review** step, ensure all parameters are correct, and click **Create**. Wait for ~10 min until status of your parent stack shows `CREATE_COMPLETE`.
 7. Select **Outputs** tab of this newly created stack and record the public IPs of cluster master, cluster search head, and list of cluster peers:
 <div>
-    <img src="//github.com/splunk/cloud-formation/raw/master/docs/splunk_cluster_output.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/splunk_cluster_output.png"/>
 </div>
 8. Type IP of cluster master in your favorite browser, and navigate to Settings >> Clustering to see all components of your newly created Splunk cluster. In few minutes, the cluster will become valid & complete as soon as initial index replication completes:
 <div>
-    <img src="//github.com/splunk/cloud-formation/raw/master/docs/splunk_clustering_snapshot.png"/>
+    <img src="//raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/splunk_clustering_snapshot.png"/>
 </div>
 
 Congratulations! You now have a new fully functional distributed Splunk cluster on AWS ready for your data!<br/>
 Here are the various EC2 instances that you should see, say with a `large` deployment (9 indexers):
 <div>
-    <img src="//github.com/splunk/cloud-formation/raw/master/docs/ec2_instances_snapshot.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/ec2_instances_snapshot.png"/>
 </div>
 
 ## Getting Started using AWS CLI ##
