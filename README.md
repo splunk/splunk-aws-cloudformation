@@ -22,7 +22,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
 
 1. Open the Amazon VPC console at https://console.aws.amazon.com/vpc/
 2. Click **Create Stack** button. In the **Create A New Stack** dialog, provide a name for your stack. For Template Source, you can select either:
-  * **Upload template file** and browse to your local copy of [vpc_master.template](../blob/master/templates/vpc_master.template)<br>
+  * **Upload template file** and browse to your local copy of [vpc_master.template](../master/templates/vpc_master.template)<br>
   OR,
   * **Provide an S3 URL to template** and paste the appropriate S3 link for `vpc_master.template` depending on your currently selected AWS region. For example, for the `us-west-1` region:<br>
 `http://splunk-cloud-us-west-1.s3.amazonaws.com/cloudformation-templates/vpc_master.template`
@@ -43,7 +43,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
 Now you're ready to add a new Splunk cluster to your VPC including cluster master node, search head and N indexer peers
 
 1. Click **Create Stack** button. In the **Create A New Stack** dialog, provide a name for your stack. For Template Source, you can select either:
-  * **Upload template file** and browse to your local copy of [splunk_cluster.template](../blob/master/templates/splunk_cluster.template)<br>
+  * **Upload template file** and browse to your local copy of [splunk_cluster.template](../master/templates/splunk_cluster.template)<br>
   OR,
   * **Provide an S3 URL to template** and paste the appropriate S3 link for `splunk_cluster.template` depending on your currently selected AWS region. For example, for the `us-west-1` region:<br>
 `http://splunk-cloud-us-west-1.s3.amazonaws.com/cloudformation-templates/splunk_cluster.template`
@@ -93,7 +93,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
                      ParameterKey=SSHFrom,ParameterValue=<SSHFrom> \
         --capabilities "CAPABILITY_IAM"
 
-    Note: You could also point to your local copy of [vpc_master.template](../blob/master/templates/vpc_master.template) using `--template-body` instead of `--template-url` in the previous command:
+    Note: You could also point to your local copy of [vpc_master.template](../master/templates/vpc_master.template) using `--template-body` instead of `--template-url` in the previous command:
 
         --template-body file:///home/local/splunk-cloudformation/templates/vpc_master.template \
 
@@ -201,7 +201,7 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
                      ParameterKey=SplunkLicenseBucket,ParameterValue="" \
         --capabilities "CAPABILITY_IAM"
 
-        Note: You could also point to your local copy of [splunk_cluster.template](../blob/master/templates/splunk_cluster.template) using `--template-body` instead of `--template-url` in the previous command:
+    Note: You could also point to your local copy of [splunk_cluster.template](../master/templates/splunk_cluster.template) using `--template-body` instead of `--template-url` in the previous command:
 
         --template-body file:///home/local/splunk-cloudformation/templates/splunk_cluster.template \
 
