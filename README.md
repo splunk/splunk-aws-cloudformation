@@ -231,10 +231,18 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 
 * Minor bug with automated linking to license master during machine bootstrap (only applicable when providing a license)
 
+## Support ##
+
+1. Splunk CloudFormation templates will not be Splunk supported.
+2. Help can be found through the broader community at [Splunk Answers](http://answers.splunk.com/)
+3. Issues should be filed here: https://github.com/splunk/splunk-cloudformation/issues
+
 ## Additional Info ##
 
 * Splunk Chef Cookbook: While AWS Cloudformation is used to launch and connect various AWS resources, Chef recipes for Splunk are used to provision the deployed machines based on corresponding role such as Splunk indexer, search head, etc. For more info, see [Splunk Cookbook](https://github.com/rarsan/splunk_cookbook) a fork from the great work by [BestBuy.Com](https://github.com/bestbuycom/splunk_cookbook)
 
 * Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guides.
 
+# License #
 
+The Splunk AWS CloudFormation is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
