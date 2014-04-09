@@ -7,12 +7,12 @@ Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk distr
 * Incorporates **best practices** for IT operations and Splunk administration
 * **Hides all complexity** behind setting up distributed Splunk infrastructure
 * **Extensible** and **customizable** templates to fit custom needs
-* **Accelerate** test drive & deployment time down to minutes
+* **Accelerates** test drive & deployment time down to minutes
 
 ## Usage ##
 
 The following Getting Started Guides walk you through launching your own fully functional Splunk cluster (1 search head, N indexers) in less than 30 min.
-You need to use an existing AWS account, and have the option to use either a GUI or a CLI. At the end of the guide, you will be able to access your new dedicated Splunk Search Head & Splunk Cluster Master. You'll also receive a list of IPs for your Splunk Indexers which you can use to configure your Splunk Forwarders `outputs.conf` to start sending data immediately.
+You need to use an existing AWS account, and you have the choice between using either a GUI or a CLI. At the end of the guide, you will be able to access your new dedicated Splunk servers via web browser or SSH. You'll also receive a list of IPs for your Splunk Indexers which you can use to configure your Splunk Forwarders `outputs.conf` to start sending data immediately.
 
 ## Getting Started using AWS Console ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS CloudFormation console.<br/>
@@ -228,9 +228,9 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 
 ## Known Issues ##
 
-* Fix issue with automated linking to license master during machine bootstrap
+* Minor bug with automated linking to license master during machine bootstrap (only applicable when providing a license)
 
-## Additional Info ## 
+## Additional Info ##
 
 * Splunk Chef Cookbook: While AWS Cloudformation is used to launch and connect various AWS resources, Chef recipes for Splunk are used to provision the deployed machines based on corresponding role such as Splunk indexer, search head, etc. For more info, see [Splunk Cookbook](https://github.com/rarsan/splunk_cookbook) a fork from the great work by [BestBuy.Com](https://github.com/bestbuycom/splunk_cookbook)
 
