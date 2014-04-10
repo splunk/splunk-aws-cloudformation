@@ -83,7 +83,7 @@ First, you must install and configure [AWS CLI tool](http://docs.aws.amazon.com/
 ### Step 1: Create Virtual Private Cloud (VPC) ###
 This one-time step provisions your new VPC with proper connectivity & needed resources, including a NAT instance, a Bastion leap host, and a Chef server with all necessary recipes
 
-1. Create your master VPC stack, say `customerVPC-test`. Make sure to replace the parameter placeholders below with your desired values. Refer to template content for specific parameter description. Notice that template-url must point to the template version located in the S3 bucket of the same region in which you want to create this new stack:
+1. Create your master VPC stack, say `customerVPC-test`. Make sure to replace the parameter placeholders below with your desired values. Refer to template content for specific parameter description. Below is an example of creating the stack in `us-west-1` region. Notice that `--template-url` specifies the template version located in the S3 bucket of the same region in which you want to create this new stack:
 
         $ aws cloudformation create-stack --stack-name customerVPC-test \
         --template-url http://splunk-cloud-us-west-1.s3.amazonaws.com/cloudformation-templates/vpc_master.template \
@@ -163,7 +163,7 @@ This one-time step provisions your new VPC with proper connectivity & needed res
 ### Step 2: Create Splunk Cluster ###
 Now you're ready to add a new Splunk cluster to your VPC including cluster master node, search head and N indexer peers
 
-1. Create your Splunk cluster stack using the outputs from previous stack as parameters: the VPC ID, the Public Subnet ID, Chef server's private IP, and newly created Bastion key for KeyName. Here's an example using outputs from `customerVPC-test` stack above:
+1. Create your Splunk cluster stack using the outputs from previous stack as parameters: the VPC ID, the Public Subnet ID, Chef server's private IP, and newly created Bastion key for KeyName. Below is an example of creating the stack in `us-west-1` region using outputs from `customerVPC-test` stack above. Notice that `--template-url` specifies the template version located in the S3 bucket of the same region in which you want to create this new stack:
 
         $ aws cloudformation create-stack --stack-name customerVPC-test-SplunkCluster \
         --template-url http://splunk-cloud-us-west-1.s3.amazonaws.com/cloudformation-templates/splunk_cluster.template
