@@ -138,37 +138,13 @@ This one-time step provisions your new VPC with proper connectivity & needed res
                 ], 
                 "Tags": [], 
                 "Outputs": [
-                    {
-                        "Description": "VPC ID of newly created VPC", 
-                        "OutputKey": "VpcID", 
-                        "OutputValue": "vpc-cb677ba9"
-                    }, 
-                    {
-                        "Description": "Public subnet ID", 
-                        "OutputKey": "PublicSubnetID", 
-                        "OutputValue": "subnet-24c02541"
-                    }, 
-                    {
-                        "Description": "Private Subnet ID", 
-                        "OutputKey": "PrivateSubnetID", 
-                        "OutputValue": "subnet-27c02542"
-                    }, 
+                    { "Description": "VPC ID of newly created VPC", "OutputKey": "VpcID", "OutputValue": "vpc-cb677ba9" }, 
+                    { "Description": "Public subnet ID", "OutputKey": "PublicSubnetID", "OutputValue": "subnet-24c02541" }, 
+                    { "Description": "Private Subnet ID", "OutputKey": "PrivateSubnetID", "OutputValue": "subnet-27c02542" }, 
                     ...
-                    {
-                        "Description": "Bastion Host Public IP address", 
-                        "OutputKey": "BastionPublicIp", 
-                        "OutputValue": "54.193.109.23"
-                    }, 
-                    {
-                        "Description": "Bastion Internal KeyPair name", 
-                        "OutputKey": "BastionKeyName", 
-                        "OutputValue": "bastion_key"
-                    },
-                    {
-                        "Description": "Chef Server Private IP address", 
-                        "OutputKey": "ChefServerPrivateIp", 
-                        "OutputValue": "192.168.10.117"
-                    }
+                    { "Description": "Bastion Host Public IP address", "OutputKey": "BastionPublicIp", "OutputValue": "54.193.109.23" }, 
+                    { "Description": "Bastion Internal KeyPair name", "OutputKey": "BastionKeyName", "OutputValue": "bastion_key" },
+                    { "Description": "Chef Server Private IP address", "OutputKey": "ChefServerPrivateIp", "OutputValue": "192.168.10.117" }
                 ], 
                 "StackStatusReason": null, 
                 "CreationTime": "2014-03-17T21:34:37.298Z", 
@@ -217,6 +193,19 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
         $ aws cloudformation describe-stacks --stack-name customerVPC-test-SplunkCluster
 
 5. Type IP of cluster master in your favorite browser, and navigate to Settings >> Clustering to see all components of your newly created Splunk cluster. In few minutes, the cluster will become valid & complete as soon as initial index replication completes.
+
+## Template Reference List ##
+
+| Template | Description
+| --- | ---
+| [vpc_master.template](../master/templates/vpc_master.template) | **Master** CF template to create a VPC with Public and Private subnets in a single AZ. This includes 1) a NAT instance in Public subnet to enable Private subnet instances to access the Internet, 2) a Bastion host micro instance in Public subnet and 3) a Chef server in Private subnet. Uses sub-templates `vpc_two_subnets.template`, `bastion_host.template`, `chef_server.template`
+| [splunk_cluster.template](../master/templates/splunk_cluster.template) | **Master** CF template to create Splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC. Uses sub-stacks `splunk_server.template` and `splunk_server_with_license.template`
+| [vpc_two_subnets.template](../master/templates/vpc_two_subnets.template) | CF template to create a VPC with Public and Private subnets in a single AZ. This includes a NAT instance in Public subnet to enable Private subnet instances to access the Internet. Used by `vpc_master.template`
+| [splunk_server.template](../master/templates/splunk_server.template) | CF template to add a Splunk server to specified VPC and subnet given a Splunk role: cluster-master, cluster-peer or cluster-search-head. Used by `splunk_cluster.template`
+| [splunk_server_with_license.template](../master/templates/splunk_server_with_license.template) | CF template equivalent to `splunk_server.template` with the addition of specifying a license from a private S3 bucket, for example when creating a splunk license master. Used by `splunk_cluster.template`
+| [splunk_server_via_chef_solo.template](../master/templates/splunk_server_via_chef_solo.template) | CF template equivalent to `splunk_server.template` but without the need for a separate Chef Server. Does does not support roles yet
+| [bastion_host.template](../master/templates/bastion_host.template) | CF template to add a Bastion host micro instance to specified VPC. It creates a new EC2 keypair to access further instances. Used by `vpc_master.template`
+| [chef_server.template](../master/templates/chef_server.template) | CF template to add a Chef server to specified VPC. It references remote cookbooks and config files stored in public S3 bucket https://splunk-cloud.s3.amazonaws.com/. Used by `vpc_master.template`
 
 ## TODOs ##
 
