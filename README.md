@@ -17,7 +17,7 @@ You need to use an existing AWS account, and you have the choice between using e
 ## Getting Started using AWS Console ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS CloudFormation console.<br/>
 
-### Step 1: Create Virtual Private Cloud (VPC) ###
+### Step 1: Setup Virtual Private Cloud (one-time setup) ###
 This one-time step provisions your new VPC with proper connectivity & needed resources, including a NAT instance, a Bastion leap host, and a Chef server with all necessary recipes
 
 1. Open the Amazon VPC console at https://console.aws.amazon.com/vpc/
@@ -80,7 +80,7 @@ The following is a step-by-step guide to create your own Splunk cluster using AW
 First, you must install and configure [AWS CLI tool](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) if you haven't already.
 
 
-### Step 1: Create Virtual Private Cloud (VPC) ###
+### Step 1: Setup Virtual Private Cloud (one-time setup) ###
 This one-time step provisions your new VPC with proper connectivity & needed resources, including a NAT instance, a Bastion leap host, and a Chef server with all necessary recipes
 
 1. Create your master VPC stack, say `customerVPC-test`. Make sure to replace the parameter placeholders below with your desired values. Refer to template content for specific parameter description. Below is an example of creating the stack in `us-west-1` region. Notice that `--template-url` specifies the template version located in the S3 bucket of the same region in which you want to create this new stack:
@@ -224,6 +224,7 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 * Add Auto Scale to Splunk Indexer and/or Search Head tier
 * Support Splunk AMIs
 * Support Windows AMIs
+* More testing
 
 ## Known Issues ##
 
@@ -231,7 +232,7 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 
 ## Support ##
 
-1. Splunk CloudFormation templates will not be Splunk supported.
+1. Splunk CloudFormation templates will not be Splunk supported
 2. Help can be found through the broader community at [Splunk Answers](http://answers.splunk.com/)
 3. Issues should be filed here: https://github.com/splunk/splunk-cloudformation/issues
 
@@ -239,7 +240,7 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 
 * Splunk Chef Cookbook: While AWS Cloudformation is used to launch and connect various AWS resources, Chef recipes for Splunk are used to provision the deployed machines based on corresponding role such as Splunk indexer, search head, etc. For more info, see [Splunk Cookbook](https://github.com/rarsan/splunk_cookbook) a fork from the great work by [BestBuy.Com](https://github.com/bestbuycom/splunk_cookbook)
 
-* Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guides.
+* Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guides
 
 # License #
 
