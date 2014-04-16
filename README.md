@@ -226,9 +226,31 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 * Support Windows AMIs
 * More testing
 
-## Known Issues ##
+## Known Issues & Caveats ##
 
-* Minor bug with automated linking to license master during machine bootstrap (only applicable when providing a license)
+### Using same VPC stack for successive Splunk Cluster creations ###
+
+As mentioned above, creating VPC with Chef (Step 1) is meant to be a one-time setup. You can create and teardown Splunk Clusters (Step 2) as many times as you want using the same VPC and keeping the same Chef server. However the only caveat is you must reset the internal state of Chef. In order to do so:
+
+1. SSH to Bastion host using the keypair you specified in Step 1:
+
+        $ ssh -i ~/.ssh/<MyKeyName>.pem ec2-user@<BastionHostPublicIP>
+
+2. SSH to Chef server from Bastion Host using the keypair created by Bastion host in Step 1:
+
+        $ ssh -i ~/.ssh/<MyBastionKeyName>.pem ec2-user@<ChefServerPrivateIP>
+
+3. Reset Chef state by deleting all Splunk-related clients & nodes added in Step 2:
+
+        $ sudo /usr/local/bin/knife node bulk delete "ip-*"
+        $ Are you sure you want to delete these nodes? (Y/N) Y
+        $ sudo /usr/local/bin/knife client bulk delete "ip-*"
+        $ Are you sure you want to delete these clients? (Y/N) Y
+
+### Bringing your own License (BYOL) ###
+
+As mentioned above, you can optionally provide you own license in Step 2. Currently there is an intermittent bug with Splunk's linking to license master which occurs during machine bootstrap (only applicable when providing a license).
+
 
 ## Support ##
 
@@ -242,6 +264,6 @@ Now you're ready to add a new Splunk cluster to your VPC including cluster maste
 
 * Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guides
 
-# License #
+## License ##
 
 The Splunk AWS CloudFormation is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
