@@ -243,9 +243,9 @@ As mentioned above, creating VPC with Chef (Step 1) is meant to be a one-time se
 3. Reset Chef state by deleting all Splunk-related clients & nodes added in Step 2:
 
         $ sudo /usr/local/bin/knife node bulk delete "ip-*"
-        $ Are you sure you want to delete these nodes? (Y/N) Y
+        Are you sure you want to delete these nodes? (Y/N) Y
         $ sudo /usr/local/bin/knife client bulk delete "ip-*"
-        $ Are you sure you want to delete these clients? (Y/N) Y
+        Are you sure you want to delete these clients? (Y/N) Y
 
 ### Bringing your own License (BYOL) ###
 
