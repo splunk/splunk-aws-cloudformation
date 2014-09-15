@@ -29,7 +29,7 @@
       "Description" : "Splunk Server EC2 instance type",
       "Type" : "String",
       "Default" : "t1.micro",
-      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge", "c3.large", "c3.4xlarge" ],
       "ConstraintDescription" : "must be a valid EC2 instance type."
     },
 
@@ -60,12 +60,31 @@
 
     "SplunkLicenseBucket" : {
       "Description" : "[Optional] Name of private S3 bucket with licenses to be accessed via authenticated requests",
+      "Default": "",
       "Type" : "String"      
     },
 
     "SplunkLicensePath" : {
       "Type" : "String",
+      "Default": "",
       "Description" : "[Optional] Path to license file in S3 Bucket"
+    },
+
+    "Subdomain" : {
+      "Description" : "Subdomain to use for new DNS record for cluster",
+      "Type" : "String",
+      "MinLength": "0",
+      "MaxLength": "255",
+      "AllowedPattern" : "[-_a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, and dashes and underscores."
+    },
+
+    "HostedZoneName" : {
+      "Description" : "Hosted zone name (without trailing dot) to create subdomains - AWS Router 53 must be the DNS web service for specified domain",
+      "Type" : "String",
+      "Default": "example.com",
+      "AllowedPattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][-a-zA-Z0-9]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][-A-Za-z0-9]*[A-Za-z0-9])$",
+      "ConstraintDescription": "Must be a valid DNS domain."
     }
   },
 
@@ -409,19 +428,145 @@
           "ResourceName"   : "PeerNode9"
         }
       }
+    },
+
+    "MasterNodeDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Fn::Join" : [ "", [
+            {"Ref" : "HostedZoneName"}, "."
+          ] ]
+        },
+        "Comment" : "DNS name for Cluster Master.",
+        "Name" : {
+          "Fn::Join" : [ "", [
+            "cm", ".",
+            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "HostedZoneName"},
+            "."
+          ] ]
+        },
+        "Type" : "A",
+        "TTL" : "900",
+        "ResourceRecords" : [
+          { "Fn::GetAtt" : [ "MasterNode", "Outputs.PublicIp" ] }
+        ]
+      }
+    },
+
+    "SearchHeadDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Fn::Join" : [ "", [
+            {"Ref" : "HostedZoneName"}, "."
+          ] ]
+        },
+        "Comment" : "DNS name for Search Head.",
+        "Name" : {
+          "Fn::Join" : [ "", [
+            "sh", ".",
+            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "HostedZoneName"},
+            "."
+          ] ]
+        },
+        "Type" : "A",
+        "TTL" : "900",
+        "ResourceRecords" : [
+          { "Fn::GetAtt" : [ "SearchHead", "Outputs.PublicIp" ] }
+        ]
+      }
+    },
+
+    "PeerNodesDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Fn::Join" : [ "", [
+            {"Ref" : "HostedZoneName"}, "."
+          ] ]
+        },
+        "Comment" : "DNS name for Splunk indexers.",
+        "Name" : {
+          "Fn::Join" : [ "", [
+            "peers", ".",
+            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "HostedZoneName"},
+            "."
+          ] ]
+        },
+        "Type" : "A",
+        "TTL" : "900",
+        "ResourceRecords" : {
+          "Fn::If" : [
+            "LargeDeployment", [
+              { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode6", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode7", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode8", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode9", "Outputs.PublicIp" ] }
+            ],
+            { "Fn::If" : [
+                "MediumDeployment",
+                [
+                  { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] }
+                ],
+                [
+                  { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] }
+                ]
+              ]
+            }
+          ]
+        }
+      }
     }
   },
 
   "Outputs" : {
+    "MasterNodeURL" : {
+      "Value" : { "Fn::Join" : [ "", [
+        "http://",
+        {"Ref" : "MasterNodeDNSRecord"}
+      ]]},
+      "Description" : "Splunk URL of Master Node"
+    },
 
     "MasterNodeIpAddress" : {
       "Value" : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PublicIp" ] },
       "Description" : "Public IP address of cluster master"
     },
 
+    "SearchHeadURL" : {
+      "Value" : { "Fn::Join" : [ "", [
+        "http://",
+        {"Ref" : "SearchHeadDNSRecord"}
+      ]]},
+      "Description" : "Splunk URL of Search Head"
+    },
+
     "SearchHeadIpAddress" : {
       "Value" : { "Fn::GetAtt" : [ "SearchHead", "Outputs.PublicIp" ] },
       "Description" : "Public IP address of cluster search head"
+    },
+
+    "PeerNodesURL" : {
+      "Value" : { "Fn::Join" : [ "", [
+        "http://",
+        {"Ref" : "PeerNodesDNSRecord"}
+      ]]},
+      "Description" : "Splunk URL of Peer Nodes"
     },
 
     "PeerNodesIpAddresses" : {
