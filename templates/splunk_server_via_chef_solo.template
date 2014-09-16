@@ -1,16 +1,18 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Adds a Splunk server to a VPC environment. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Add a Splunk server to your VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
 
   "Parameters" : {
     "VpcId" : {
       "Type" : "String",
+      "Default" : "vpc-",
       "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
     },
 
     "SubnetId" : {
       "Type" : "String",
+      "Default" : "subnet-",
       "Description" : "SubnetId of an existing Public or Private subnet in your Virtual Private Cloud (VPC)"
     },
 
@@ -23,7 +25,7 @@
     },
 
     "KeyName" : {
-      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances (use bastion KeyPair if available)",
       "Type" : "String",
       "MinLength": "1",
       "MaxLength": "64",
@@ -31,10 +33,36 @@
       "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
     },
 
+    "AssociatePublicIP" : {
+      "Description" : "Indicates whether the server receives a public IP address (default is public IP)",
+      "Type": "String",
+      "Default": "yes",
+      "AllowedValues": [ "yes", "no" ],
+      "ConstraintDescription": "must be 'yes' or 'no'"
+    },
+
+    "ResourceName" : {
+      "Description" : "The Logical Resource Name - commonly set by parent stack",
+      "Type": "String",
+      "Default": "SplunkServer",
+      "MinLength": "1",
+      "MaxLength": "128",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+    },
+
     "BucketName" : {
       "Description" : "Name of S3 bucket with recipes & licenses to be accessed via authenticated requests",
-      "Default" : "splunk-cloud",
+      "Default" : "splunk-cloud-test",
       "Type" : "String"
+    }
+  },
+
+  "Conditions" : {
+    "AssociatePublicIpAddress" : {
+      "Fn::Equals" : [
+        {"Ref" : "AssociatePublicIP"},
+        "yes"
+      ]
     }
   },
 
@@ -110,22 +138,18 @@
       }
     },
 
-    "SplunkServerIPAddress" : {
-      "Type" : "AWS::EC2::EIP",
-      "Properties" : {
-        "Domain" : "vpc",
-        "InstanceId" : { "Ref" : "SplunkServerHost" }
-      }
-    },
-
     "SplunkServerSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
         "VpcId" : { "Ref" : "VpcId" },
-        "GroupDescription" : "Enable SSH access via port 22 and HTTP access via port 80",
+        "GroupDescription" : "Enable internal access for SSH and Splunk management/replication, and allow public access to Splunk web & receiver",
         "SecurityGroupIngress" : [
           { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "192.168.0.0/16" },
-          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" }
+          { "IpProtocol" : "tcp", "FromPort" : "8089", "ToPort" : "8089", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9887", "ToPort" : "9887", "CidrIp" : "192.168.0.0/16" },
+          { "IpProtocol" : "tcp", "FromPort" : "9997", "ToPort" : "9997", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" },
+          { "IpProtocol" : "tcp", "FromPort" : "443", "ToPort" : "443", "CidrIp" : "0.0.0.0/0" }
         ]
       }
     },
@@ -216,8 +240,13 @@
       "Properties" : {
         "InstanceType" : { "Ref" : "InstanceType" },
         "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
-        "SecurityGroupIds" : [{ "Ref" : "SplunkServerSecurityGroup" }],
-        "SubnetId" : { "Ref" : "SubnetId" },
+        "NetworkInterfaces" : [{
+          "GroupSet"                 : [{ "Ref" : "SplunkServerSecurityGroup" }],
+          "AssociatePublicIpAddress" : { "Fn::If" : ["AssociatePublicIpAddress", "true", "false"] },
+          "DeviceIndex"              : "0",
+          "DeleteOnTermination"      : "true",
+          "SubnetId"                 : { "Ref" : "SubnetId" }
+        }],
         "KeyName" : { "Ref" : "KeyName" },
         "UserData": {
           "Fn::Base64" : { "Fn::Join" : ["", [
@@ -299,9 +328,15 @@
       "Description" : "Splunk Server Instance ID"
     },
 
-    "SplunkServerIPAddress" : {
-      "Value" : {"Ref": "SplunkServerIPAddress"},
-      "Description" : "Public IP address of Splunk Server"
+    "PrivateIp" : {
+      "Value" : {"Fn::GetAtt" : [ "SplunkServerHost", "PrivateIp" ]},
+      "Description" : "Private IP address of instance"
+    },
+
+    "PublicIp" : {
+      "Condition" : "AssociatePublicIpAddress",
+      "Value" : {"Fn::GetAtt" : [ "SplunkServerHost", "PublicIp" ]},
+      "Description" : "Public IP address of instance"
     }
   }
 }
