@@ -71,10 +71,11 @@
     },
 
     "Subdomain" : {
-      "Description" : "Subdomain to use for new DNS record for cluster",
+      "Description" : "Subdomain to use for new DNS record for cluster (optional)",
       "Type" : "String",
       "MinLength": "0",
       "MaxLength": "255",
+      "Default": "",
       "AllowedPattern" : "[-_a-zA-Z0-9]*",
       "ConstraintDescription" : "can contain only alphanumeric characters, and dashes and underscores."
     },
@@ -102,9 +103,13 @@
   },
 
   "Conditions" : {
-    "SkipLicenseMaster" : { "Fn::Equals" : [{ "Ref": "SplunkLicensePath" }, ""] },
+    "SubdomainEmpty" : { "Fn::Equals" : [{ "Ref": "Subdomain" }, ""]},
+    "SkipLicenseMaster" : { "Fn::Equals" : [{ "Ref": "SplunkLicensePath" }, ""]},
     "AddLicenseMaster" : { "Fn::Not" : [
       { "Condition" : "SkipLicenseMaster" }
+    ]},
+    "AddDNSRecords" : { "Fn::Not" : [
+      { "Fn::Equals" : [{ "Ref": "HostedZoneName" }, ""]}
     ]},
     "MediumDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "medium"] },
     "LargeDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "large"] },
@@ -430,8 +435,63 @@
       }
     },
 
+    "MasterNodeInternalDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Condition": "AddDNSRecords",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Fn::Join" : [ "", [
+            {"Ref" : "HostedZoneName"}, "."
+          ] ]
+        },
+        "Comment" : "Private DNS name for Cluster Master.",
+        "Name" : {
+          "Fn::Join" : [ "", [
+            "cm", ".", "int", ".",
+            {"Ref" : "Subdomain"},
+            {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+            {"Ref" : "HostedZoneName"},
+            "."
+          ] ]
+        },
+        "Type" : "CNAME",
+        "TTL" : "900",
+        "ResourceRecords" : [
+          { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateDnsName" ] }
+        ]
+      }
+    },
+
+    "SearchHeadInternalDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Condition": "AddDNSRecords",
+      "Properties" : {
+        "HostedZoneName" : {
+          "Fn::Join" : [ "", [
+            {"Ref" : "HostedZoneName"}, "."
+          ] ]
+        },
+        "Comment" : "Private DNS name for Search Head.",
+        "Name" : {
+          "Fn::Join" : [ "", [
+            "sh", ".", "int", ".",
+            {"Ref" : "Subdomain"},
+            {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+            {"Ref" : "HostedZoneName"},
+            "."
+          ] ]
+        },
+        "Type" : "CNAME",
+        "TTL" : "900",
+        "ResourceRecords" : [
+          { "Fn::GetAtt" : [ "SearchHead", "Outputs.PrivateDnsName" ] }
+        ]
+      }
+    },
+
     "MasterNodeDNSRecord" : {
       "Type" : "AWS::Route53::RecordSet",
+      "Condition": "AddDNSRecords",
       "Properties" : {
         "HostedZoneName" : {
           "Fn::Join" : [ "", [
@@ -442,7 +502,8 @@
         "Name" : {
           "Fn::Join" : [ "", [
             "cm", ".",
-            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "Subdomain"},
+            {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
             {"Ref" : "HostedZoneName"},
             "."
           ] ]
@@ -457,6 +518,7 @@
 
     "SearchHeadDNSRecord" : {
       "Type" : "AWS::Route53::RecordSet",
+      "Condition": "AddDNSRecords",
       "Properties" : {
         "HostedZoneName" : {
           "Fn::Join" : [ "", [
@@ -467,7 +529,8 @@
         "Name" : {
           "Fn::Join" : [ "", [
             "sh", ".",
-            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "Subdomain"},
+            {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
             {"Ref" : "HostedZoneName"},
             "."
           ] ]
@@ -482,6 +545,7 @@
 
     "PeerNodesDNSRecord" : {
       "Type" : "AWS::Route53::RecordSet",
+      "Condition": "AddDNSRecords",
       "Properties" : {
         "HostedZoneName" : {
           "Fn::Join" : [ "", [
@@ -492,7 +556,8 @@
         "Name" : {
           "Fn::Join" : [ "", [
             "peers", ".",
-            {"Ref" : "Subdomain"}, ".",
+            {"Ref" : "Subdomain"},
+            {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
             {"Ref" : "HostedZoneName"},
             "."
           ] ]
@@ -536,6 +601,7 @@
 
   "Outputs" : {
     "MasterNodeURL" : {
+      "Condition": "AddDNSRecords",
       "Value" : { "Fn::Join" : [ "", [
         "http://",
         {"Ref" : "MasterNodeDNSRecord"}
@@ -549,6 +615,7 @@
     },
 
     "SearchHeadURL" : {
+      "Condition": "AddDNSRecords",
       "Value" : { "Fn::Join" : [ "", [
         "http://",
         {"Ref" : "SearchHeadDNSRecord"}
@@ -562,11 +629,12 @@
     },
 
     "PeerNodesURL" : {
+      "Condition": "AddDNSRecords",
       "Value" : { "Fn::Join" : [ "", [
-        "http://",
-        {"Ref" : "PeerNodesDNSRecord"}
+        {"Ref" : "PeerNodesDNSRecord"},
+        ":9997"
       ]]},
-      "Description" : "Splunk URL of Peer Nodes"
+      "Description" : "Indexer tier address to forward data to"
     },
 
     "PeerNodesIpAddresses" : {
