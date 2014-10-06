@@ -181,6 +181,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkClusterMasterSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "SplunkLicenseBucket" : { "Ref" : "SplunkLicenseBucket" },
           "SplunkLicensePath" : { "Ref" : "SplunkLicensePath" },
           "SplunkRole"     : "cluster-master",
@@ -204,6 +205,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkClusterMasterSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "SplunkRole"     : "cluster-master",
           "ResourceName"   : "MasterNode"
         }
@@ -225,6 +227,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkSearchHeadSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-search-head",
           "ResourceName"   : "SearchHead"
@@ -247,6 +250,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode1"
@@ -269,6 +273,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode2"
@@ -291,6 +296,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode3"
@@ -314,6 +320,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode4"
@@ -337,6 +344,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode5"
@@ -360,6 +368,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode6"
@@ -383,6 +392,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode7"
@@ -406,6 +416,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode8"
@@ -429,6 +440,7 @@
           "InstanceType"   : { "Ref" : "InstanceType" },
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
+          "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
           "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode9"
