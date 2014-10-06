@@ -40,20 +40,11 @@
     },
 
     "AssociatePublicIP" : {
-      "Description" : "Indicates whether the server receives a public IP address (default is public IP)",
+      "Description" : "Indicates whether server receives a public IP address",
       "Type": "String",
       "Default": "yes",
       "AllowedValues": [ "yes", "no" ],
       "ConstraintDescription": "must be 'yes' or 'no'"
-    },
-
-    "SplunkRole" : {
-      "Description" : "Chef Splunk role to assign to this instance",
-      "Type" : "String",
-      "MinLength": "1",
-      "MaxLength": "64",
-      "AllowedValues" : [ "splunk-server", "splunk-indexer", "splunk-searcher", "cluster-master", "cluster-peer", "cluster-search-head" ],
-      "ConstraintDescription" : "must be a valid Chef role for Splunk."
     },
 
     "ResourceName" : {
@@ -65,8 +56,45 @@
       "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
     },
 
-    "BucketName" : {
-      "Description" : "Name of S3 bucket with recipes & licenses to be accessed via authenticated requests",
+    "SplunkRole" : {
+      "Description" : "Chef Splunk role to assign to this instance",
+      "Type" : "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedValues" : [ "splunk-server", "splunk-indexer", "splunk-searcher", "cluster-master", "cluster-peer", "cluster-search-head" ],
+      "ConstraintDescription" : "must be a valid Chef role for Splunk."
+    },
+
+    "LicenseMasterIP" : {
+      "Type" : "String",
+      "Default": "",
+      "Description" : "[Optional] Splunk license master IP or hostname."
+    },
+
+    "ClusterMasterIP" : {
+      "Type" : "String",
+      "Default": "",
+      "Description" : "[Optional] Splunk cluster master IP or hostname."
+    },
+
+    "IsLicenseMaster" : {
+      "Description" : "Indicates whether server acts as license master. Overrides SplunkLicenseMasterIP setting",
+      "Type": "String",
+      "Default": "no",
+      "AllowedValues": [ "yes", "no" ],
+      "ConstraintDescription": "must be 'yes' or 'no'"
+    },
+
+    "ClusterSecurityKey" : {
+      "Description" : "Security key to authenticate traffic between cluster nodes."
+      "Type" : "String",
+      "Default" : "password",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]+",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "CookbookBucketName" : {
+      "Description" : "Name of S3 bucket with Chef recipes & roles",
       "Default" : "splunk-cloud-test",
       "Type" : "String"
     }
@@ -84,7 +112,13 @@
         {"Ref" : "SecurityGroup"},
         "default"
       ]
-    }
+    },
+    "SetClusterMasterIP" : { "Fn::Not" : [
+      { "Fn::Equals" : [{ "Ref": "ClusterMasterIP" }, ""]}
+    ]},
+    "SetLicenseMasterIP" : { "Fn::Not" : [
+      { "Fn::Equals" : [{ "Ref": "LicenseMasterIP" }, ""]}
+    ]}
   },
 
   "Mappings" : {
@@ -117,49 +151,6 @@
 
   "Resources" : {
 
-    "CfnUser" : {
-      "Type" : "AWS::IAM::User",
-      "Properties" : {
-        "Path": "/",
-        "Policies": [{
-          "PolicyName": "root",
-          "PolicyDocument": { "Statement":[{
-            "Effect": "Allow",
-            "Action": [
-              "cloudformation:DescribeStackResource",
-              "s3:GetObject"
-            ],
-            "Resource":"*"
-          }]}
-        }]
-      }
-    },
-
-    "CfnKeys" : {
-      "Type" : "AWS::IAM::AccessKey",
-      "Properties" : {
-        "UserName" : {"Ref": "CfnUser"}
-      }
-    },
-
-    "BucketPolicy" : {
-      "Type" : "AWS::S3::BucketPolicy",
-      "Properties" : {
-        "PolicyDocument": {
-          "Version"      : "2008-10-17",
-          "Id"           : "MyPolicy",
-          "Statement"    : [{
-            "Sid"        : "ReadAccess",
-            "Action"     : ["s3:GetObject"],
-            "Effect"     : "Allow",
-            "Resource"   : { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "BucketName" }, "/*"]]},
-            "Principal"  : { "AWS": {"Fn::GetAtt" : ["CfnUser", "Arn"]} }
-          }]
-        },
-        "Bucket" : { "Ref" : "BucketName" }
-      }
-    },
-
     "SplunkServerSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
@@ -178,7 +169,6 @@
 
     "SplunkServerHost" : {
       "Type" : "AWS::EC2::Instance",
-      "DependsOn": "BucketPolicy",
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
           "config" : {
@@ -196,7 +186,10 @@
                 "content" : { "Fn::Join" : ["", [
                   "{\n",
                   "  \"splunk\": {\n",
-                  "    \"cluster_master_host\": \"192.168.1.188\"\n",
+                  "    \"cluster_master_host\": \"",  { "Ref" : "ClusterMasterIP" }, "\",\n",
+                  "    \"license_master_host\": \"",  { "Ref" : "LicenseMasterIP" }, "\",\n",
+                  "    \"is_license_master\": \"",  { "Ref" : "IsLicenseMaster" }, "\",\n",
+                  "    \"pass4SymmKey\": \"",  { "Ref" : "ClusterSecurityKey" }, "\"\n",
                   "  },\n",
                   "  \"run_list\": [\n",
                   "    \"role[", { "Ref" : "SplunkRole" }, "]\"\n",
@@ -223,18 +216,9 @@
             },
 
             "sources" : {
-              "/etc/chef/cookbooks/" : { "Fn::Join" : ["", ["https://" , { "Ref" : "BucketName" }, ".s3.amazonaws.com/cookbooks.tar.gz"]]},
-              "/etc/chef/roles/" : { "Fn::Join" : ["", ["https://" , { "Ref" : "BucketName" }, ".s3.amazonaws.com/roles.tar.gz"]]}
+              "/etc/chef/cookbooks/" : { "Fn::Join" : ["", ["https://" , { "Ref" : "CookbookBucketName" }, ".s3.amazonaws.com/cookbooks.tar.gz"]]},
+              "/etc/chef/roles/" : { "Fn::Join" : ["", ["https://" , { "Ref" : "CookbookBucketName" }, ".s3.amazonaws.com/roles.tar.gz"]]}
             }
-          }
-        },
-
-        "AWS::CloudFormation::Authentication" : {
-          "S3AccessCreds" : {
-            "type" : "S3",
-            "accessKeyId" : { "Ref" : "CfnKeys" },
-            "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
-            "buckets" : [ { "Ref" : "BucketName" } ]
           }
         }
       },
@@ -270,8 +254,6 @@
                 "}\n",
 
                 "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r SplunkServerHost ",
-                "    --access-key ",  { "Ref" : "CfnKeys" },
-                "    --secret-key ", {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
                 "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
 
                 "#ensure environment runs ruby 1.9\n",

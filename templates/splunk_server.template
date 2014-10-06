@@ -40,7 +40,7 @@
     },
 
     "AssociatePublicIP" : {
-      "Description" : "Indicates whether the server receives a public IP address (default is public IP)",
+      "Description" : "Indicates whether the server receives a public IP address",
       "Type": "String",
       "Default": "yes",
       "AllowedValues": [ "yes", "no" ],
