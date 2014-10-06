@@ -1,0 +1,22 @@
+{
+  "name": "cluster-master",
+  "description": "",
+  "json_class": "Chef::Role",
+  "default_attributes": {
+  },
+  "override_attributes": {
+    "splunk": {
+      "cluster_deployment": true,
+      "is_license_master": true,
+      "license_path": "/etc/splunk/enterprise.license",
+      "static_server_configs": ["web","transforms","limits","indexes","server"]
+    }
+  },
+  "chef_type": "role",
+  "run_list": [
+    "recipe[splunk::server]"
+  ],
+  "env_run_lists": {
+  }
+}
+

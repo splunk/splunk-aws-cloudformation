@@ -1,0 +1,20 @@
+{
+  "name": "cluster-search-head",
+  "description": "",
+  "json_class": "Chef::Role",
+  "default_attributes": {
+  },
+  "override_attributes": {
+    "splunk": {
+      "cluster_deployment": true,
+      "static_server_configs": ["web","transforms","limits","indexes","server"]
+    }
+  },
+  "chef_type": "role",
+  "run_list": [
+    "recipe[splunk::server]"
+  ],
+  "env_run_lists": {
+  }
+}
+
