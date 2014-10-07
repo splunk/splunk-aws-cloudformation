@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Build an AWS VPC with Public and Private subnets in a single AZ. This includes a NAT instance in Public subnet to enable Private subnet instances to access the Internet. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Build an AWS VPC with Public and Private subnets in a single AZ. This includes a NAT instance in Public subnet to enable Private subnet instances to access the Internet.",
 
   "Parameters" : {
 
@@ -26,19 +26,6 @@
   },
 
   "Mappings" : {
-
-    "AWSInstanceType2Arch" : {
-       "t1.micro"    : { "Arch" : "64" },
-       "m1.small"    : { "Arch" : "64" },
-       "m1.medium"   : { "Arch" : "64" },
-       "m1.large"    : { "Arch" : "64" },
-       "m1.xlarge"   : { "Arch" : "64" },
-       "m2.xlarge"   : { "Arch" : "64" },
-       "m2.2xlarge"  : { "Arch" : "64" },
-       "m2.4xlarge"  : { "Arch" : "64" },
-       "c1.medium"   : { "Arch" : "64" },
-       "c1.xlarge"   : { "Arch" : "64" }
-     },
 
      "AWSRegionArch2AMINAT" : {
        "us-east-1"      : { "64" : "ami-f619c29f" },

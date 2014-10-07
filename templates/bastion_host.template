@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Add a Bastion host to an existing VPC. VPC must have an internet gateway already. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Add a Bastion host to an existing VPC. VPC must have an internet gateway already.",
 
   "Parameters" : {
     "VpcId" : {

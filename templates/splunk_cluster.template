@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Create splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Create splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC.",
 
   "Parameters" : {
     "VpcId" : {
