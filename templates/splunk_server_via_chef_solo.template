@@ -86,7 +86,7 @@
     },
 
     "ClusterSecurityKey" : {
-      "Description" : "Security key to authenticate traffic between cluster nodes."
+      "Description" : "Security key to authenticate traffic between cluster nodes.",
       "Type" : "String",
       "Default" : "password",
       "AllowedPattern" : "[-_ a-zA-Z0-9]+",
@@ -186,6 +186,7 @@
                 "content" : { "Fn::Join" : ["", [
                   "{\n",
                   "  \"splunk\": {\n",
+                  "    \"server_name\": \"",  { "Ref" : "ResourceName" }, "\",\n",
                   "    \"cluster_master_host\": \"",  { "Ref" : "ClusterMasterIP" }, "\",\n",
                   "    \"license_master_host\": \"",  { "Ref" : "LicenseMasterIP" }, "\",\n",
                   "    \"is_license_master\": \"",  { "Ref" : "IsLicenseMaster" }, "\",\n",
