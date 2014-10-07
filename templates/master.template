@@ -164,7 +164,7 @@
       "DependsOn" : "BastionHost",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
-                          "cloudformation-templates", "splunk_cluster_via_chef_solo.template" ]]},
+                          "cloudformation-templates", "splunk_cluster.template" ]]},
         "Parameters" : {
           "VpcId"               : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
           "SubnetId"            : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
