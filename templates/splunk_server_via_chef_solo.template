@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Add a Splunk server to your VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Add a Splunk server to your VPC.",
 
   "Parameters" : {
     "VpcId" : {
@@ -112,13 +112,7 @@
         {"Ref" : "SecurityGroup"},
         "default"
       ]
-    },
-    "SetClusterMasterIP" : { "Fn::Not" : [
-      { "Fn::Equals" : [{ "Ref": "ClusterMasterIP" }, ""]}
-    ]},
-    "SetLicenseMasterIP" : { "Fn::Not" : [
-      { "Fn::Equals" : [{ "Ref": "LicenseMasterIP" }, ""]}
-    ]}
+    }
   },
 
   "Mappings" : {
@@ -153,6 +147,7 @@
 
     "SplunkServerSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
+      "Condition" : "CreateDefaultSecurityGroup",
       "Properties" : {
         "VpcId" : { "Ref" : "VpcId" },
         "GroupDescription" : "Enable internal access for SSH and Splunk management/replication, and allow public access to Splunk web & receiver",
