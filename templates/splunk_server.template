@@ -145,7 +145,7 @@
 
   "Resources" : {
 
-    "SplunkServerSecurityGroup" : {
+    "SplunkDefaultSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Condition" : "CreateDefaultSecurityGroup",
       "Properties" : {
@@ -222,7 +222,13 @@
         "InstanceType" : { "Ref" : "InstanceType" },
         "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
         "NetworkInterfaces" : [{
-          "GroupSet"                 : [{ "Ref" : "SplunkServerSecurityGroup" }],
+          "GroupSet"                 : [{
+            "Fn::If" : [
+              "CreateDefaultSecurityGroup",
+              {"Ref" : "SplunkDefaultSecurityGroup"},
+              {"Ref" : "SecurityGroup"}
+            ]
+          }],
           "AssociatePublicIpAddress" : { "Fn::If" : ["AssociatePublicIpAddress", "true", "false"] },
           "DeviceIndex"              : "0",
           "DeleteOnTermination"      : "true",
