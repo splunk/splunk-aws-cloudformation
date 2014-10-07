@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Build an AWS VPC with Public and Private subnets with a NAT in a single AZ. This includes a Bastion host micro instance in Public subnet and a Chef server in Private subnet. **WARNING** You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Build a distributed Splunk cluster in a VPC with a bastion host.",
 
   "Parameters" : {
 
@@ -24,29 +24,86 @@
       "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
     },
 
-    "InstanceType" : {
-      "Description" : "Chef Server EC2 instance type",
-      "Type" : "String",
-      "Default" : "t1.micro",
-      "AllowedValues" : [ "t1.micro", "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
-      "ConstraintDescription" : "must be a valid EC2 instance type."
-    },
-
     "SSHFrom" : {
-      "Description": "Lockdown SSH access to Bastion host & NAT instance (default can be accessed from anywhere)",
+      "Description": "Lockdown SSH access to Bastion host (default can be accessed from anywhere)",
       "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
       "Default": "0.0.0.0/0",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "InstanceType" : {
+      "Description" : "Splunk Server EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge", "c3.large", "c3.4xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "ClusterSize" : {
+      "Description" : "Splunk Cluster size",
+      "Type" : "String",
+      "Default" : "small",
+      "AllowedValues" : [ "small", "medium", "large" ],
+      "ConstraintDescription" : "must be 'small', 'medium', or 'large.'",
+      "Description" : "Cluster size ('small' for 3 indexers, 'medium' for 5 or 'large' for 9 indexers)"
+    },
+
+    "ClusterSecurityKey" : {
+      "Description" : "Security key to authenticate traffic between cluster nodes.",
+      "Type" : "String",
+      "Default" : "password",
+      "AllowedPattern" : "[-_ a-zA-Z0-9]+",
+      "ConstraintDescription" : "can contain only alphanumeric characters, spaces, dashes and underscores."
+    },
+
+    "CIDRBlock" : {
+      "Description": "Restrict incoming data from specified IP range (default can be received from anywhere)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid CIDR range of the form x.x.x.x/x."
+    },
+
+    "SplunkLicenseBucket" : {
+      "Description" : "[Optional] Name of private S3 bucket with licenses to be accessed via authenticated requests",
+      "Default": "",
+      "Type" : "String"      
+    },
+
+    "SplunkLicensePath" : {
+      "Type" : "String",
+      "Default": "",
+      "Description" : "[Optional] Path to license file in S3 Bucket"
+    },
+
+    "Subdomain" : {
+      "Description" : "[Optional] Subdomain (without trailing dot) to use for new DNS record for cluster",
+      "Type" : "String",
+      "MinLength": "0",
+      "MaxLength": "255",
+      "Default": "",
+      "AllowedPattern" : "[-_a-zA-Z0-9]*",
+      "ConstraintDescription" : "can contain only alphanumeric characters, and dashes and underscores."
+    },
+
+    "HostedZoneName" : {
+      "Description" : "[Optional] Hosted zone name (without trailing dot) to create subdomains e.g. 'example.com'. Router 53 must be the DNS service for specified domain",
+      "Type" : "String",
+      "Default": "",
+      "AllowedPattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][-a-zA-Z0-9]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][-A-Za-z0-9]*[A-Za-z0-9])?$",
+      "ConstraintDescription": "Must be a valid DNS domain."
     }
   },
 
   "Mappings" : {
 
     "AWSRegion2s3Bucket" : {
-      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-test.s3.amazonaws.com" },
       "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
       "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
       "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },
@@ -54,30 +111,13 @@
       "ap-northeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-northeast-1.s3.amazonaws.com" },
       "ap-southeast-1" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-1.s3.amazonaws.com" },
       "ap-southeast-2" : { "s3Bucket" : "https://splunk-cloud-ap-southeast-2.s3.amazonaws.com" }
-    },
+    }
+  },
 
-    "AWSInstanceType2Arch" : {
-       "t1.micro"    : { "Arch" : "64" },
-       "m1.small"    : { "Arch" : "64" },
-       "m1.medium"   : { "Arch" : "64" },
-       "m1.large"    : { "Arch" : "64" },
-       "m1.xlarge"   : { "Arch" : "64" },
-       "m2.xlarge"   : { "Arch" : "64" },
-       "m2.2xlarge"  : { "Arch" : "64" },
-       "m2.4xlarge"  : { "Arch" : "64" },
-       "c1.medium"   : { "Arch" : "64" },
-       "c1.xlarge"   : { "Arch" : "64" }
-     },
-
-     "AWSRegionArch2AMINAT" : {
-       "us-east-1"      : { "64" : "ami-f619c29f" },
-       "us-west-1"      : { "64" : "ami-3bcc9e7e" },
-       "us-west-2"      : { "64" : "ami-52ff7262" },
-       "eu-west-1"      : { "64" : "ami-e5e2d991" },
-       "sa-east-1"      : { "64" : "ami-0039e61d" },
-       "ap-southeast-1" : { "64" : "ami-02eb9350" },
-       "ap-northeast-1" : { "64" : "ami-14d86d15" }
-     }
+  "Conditions" : {
+    "AddDNSRecords" : { "Fn::Not" : [
+      { "Fn::Equals" : [{ "Ref": "HostedZoneName" }, ""]}
+    ]}
   },
 
   "Resources" : {
@@ -85,11 +125,11 @@
     "VPC" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
-        "Comment" : "VPC with Public & Private subnets + NAT instance."
+        "Comment" : "VPC with 1 public subnet."
       },
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
-                         "cloudformation-templates", "vpc_two_subnets.template" ]]},
+                         "cloudformation-templates", "vpc_one_subnet.template" ]]},
         "Parameters" : {
           "KeyName" : { "Ref" : "KeyName" },
           "SSHFrom" : { "Ref" : "SSHFrom" }
@@ -100,7 +140,7 @@
     "BastionHost" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
-        "Comment" : "Bastion host in Public subnet."
+        "Comment" : "Bastion host in public subnet."
       },
       "DependsOn" : "VPC",
       "Properties" : {
@@ -116,20 +156,27 @@
       }
     },
 
-    "ChefServer" : {
+    "SplunkCluster" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
-        "Comment" : "Chef Server in Private subnet."
+        "Comment" : "Splunk cluster in public subnet."
       },
       "DependsOn" : "BastionHost",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
-                          "cloudformation-templates", "chef_server.template" ]]},
+                          "cloudformation-templates", "splunk_cluster_via_chef_solo.template" ]]},
         "Parameters" : {
-          "VpcId"          : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
-          "SubnetId"       : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnetID" ] },
-          "InstanceType"   : { "Ref" : "InstanceType" },
-          "KeyName"        : { "Ref" : "BastionKeyName" }
+          "VpcId"               : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
+          "SubnetId"            : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+          "ClusterSize"         : { "Ref" : "ClusterSize" },
+          "ClusterSecurityKey"  : { "Ref" : "ClusterSecurityKey" },
+          "InstanceType"        : { "Ref" : "InstanceType" },
+          "KeyName"             : { "Ref" : "BastionKeyName" },
+          "CIDRBlock"           : { "Ref" : "CIDRBlock" },
+          "SplunkLicenseBucket" : { "Ref" : "SplunkLicenseBucket" },
+          "SplunkLicensePath"   : { "Ref" : "SplunkLicensePath" },
+          "Subdomain"           : { "Ref" : "Subdomain" },
+          "HostedZoneName"      : { "Ref" : "HostedZoneName" }
         }
       }
     }
@@ -147,39 +194,42 @@
       "Description" : "Public subnet ID"
     },
 
-    "PrivateSubnetID" : {
-      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.PrivateSubnetID" ] },
-      "Description" : "Private Subnet ID"
-    },
-
-    "NATDeviceID" : {
-      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.NATDeviceID" ] },
-      "Description" : "NAT Instance ID"
-    },
-
-    "BastionInstanceID" : {
-      "Value" : { "Fn::GetAtt" : ["BastionHost", "Outputs.InstanceID" ] },
-      "Description" : "Bastion Host Instance ID"
-    },
-
     "BastionPublicIp" : {
       "Value" : {"Fn::GetAtt" : [ "BastionHost", "Outputs.PublicIp" ]},
-      "Description" : "Bastion Host Public IP address"
+      "Description" : "Bastion host public IP address"
     },
     
-    "BastionKeyName" : {
-      "Value" : { "Ref" : "BastionKeyName" },
-      "Description" : "Bastion Internal KeyPair name"
+    "MasterNodeURL" : {
+      "Condition": "AddDNSRecords",
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.MasterNodeURL" ]},
+      "Description" : "Splunk URL of cluster master"
     },
 
-    "ChefInstanceID" : {
-      "Value" : { "Fn::GetAtt" : ["ChefServer", "Outputs.InstanceID" ] },
-      "Description" : "Chef Server Instance ID"
+    "MasterNodeIpAddress" : {
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.MasterNodeIpAddress" ]},
+      "Description" : "Public IP address of cluster master"
     },
 
-    "ChefServerPrivateIp" : {
-      "Value" : {"Fn::GetAtt" : [ "ChefServer", "Outputs.PrivateIp" ] },
-      "Description" : "Chef Server Private IP address"
+    "SearchHeadURL" : {
+      "Condition": "AddDNSRecords",
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.SearchHeadURL" ]},
+      "Description" : "Splunk URL of cluster search head"
+    },
+
+    "SearchHeadIpAddress" : {
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.SearchHeadIpAddress" ]},
+      "Description" : "Public IP address of cluster search head"
+    },
+
+    "PeerNodesURL" : {
+      "Condition": "AddDNSRecords",
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.PeerNodesURL" ]},
+      "Description" : "Indexer tier address to forward data to"
+    },
+
+    "PeerNodesIpAddresses" : {
+      "Value" : {"Fn::GetAtt" : [ "SplunkCluster", "Outputs.PeerNodesIpAddresses" ]},
+      "Description" : "List of public IP address of all cluster peer nodes"
     }
   }
 }
