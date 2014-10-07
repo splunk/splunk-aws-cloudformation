@@ -20,7 +20,7 @@ The following is a step-by-step guide to create your own Splunk cluster using AW
 ### Create Splunk Cluster in new VPC ###
 A single template will provision your new distributed Splunk cluster in a new VPC with a bastion host.
 
-1. Open the Amazon VPC console at https://console.aws.amazon.com/vpc/
+1. Open Amazon CloudFormation console at https://console.aws.amazon.com/cloudformation
 2. Click **Create Stack** button. In the **Create A New Stack** dialog, provide a name for your stack. For Template Source, you can select either:
   * **Upload template file** and browse to your local copy of [master.template](../master/templates/master.template)<br>
   OR,
@@ -181,10 +181,10 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 ## TODOs ##
 
-* Apply recommended EC2 instance type & proper sizing
 * Support Search Head Pooling to go from 1:N searcher/indexer to N:N searcher/indexer topology
 * Add HA to potential single points of failure such as Cluster Master, License Master or Chef Server
 * Add Auto Scale to Splunk Indexer and/or Search Head tier
+* Apply recommended EC2 instance type & proper sizing
 * Support Splunk AMIs
 * Support Windows AMIs
 * More testing
