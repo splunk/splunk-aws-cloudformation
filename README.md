@@ -14,10 +14,9 @@ Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk distr
 The following Getting Started Guides walk you through launching your own fully functional Splunk cluster (1 search head, N indexers) in about 20 min.
 You need to use an existing AWS account, and you have the choice between using either a GUI or a CLI. At the end of the guide, you will be able to access your new dedicated Splunk servers via web browser or SSH. You'll also receive a list of IPs for your Splunk Indexers which you can use to configure your Splunk Forwarders `outputs.conf` to start sending data immediately.
 
-## Getting Started using AWS Console ##
+## Create Splunk Cluster using AWS Console ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS CloudFormation console.<br/>
 
-### Create Splunk Cluster in new VPC ###
 A single template will provision your new distributed Splunk cluster in a new VPC with a bastion host.
 
 1. Open Amazon CloudFormation console at https://console.aws.amazon.com/cloudformation
@@ -58,11 +57,10 @@ Here are the various EC2 instances that you should see, say with a `large` deplo
 
 Note that you can re-use the same VPC from the above master stack, to add as many Splunk cluster stacks as needed by directly using [splunk_cluster.template](../master/templates/splunk_cluster.template) template, and following the same steps as above. Make sure to specify the outputs VPC ID and Public Subnet ID of above master stack, as parameters for Splunk cluster stacks.
 
-## Getting Started using AWS CLI ##
+## Create Splunk Cluster using AWS CLI ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS Command Line Interface.<br/>
 First, you must install and configure [AWS CLI tool](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) if you haven't already.
 
-### Create Splunk Cluster in new VPC ###
 A single template will provision your new distributed Splunk cluster in a new VPC with a bastion host.
 
 1. Create your master VPC stack, say `customerVPC-test`. Make sure to replace the parameter placeholders below with your desired values. Refer to template content for specific parameter description. Below is an example of creating the stack in `us-west-1` region. Notice that `--template-url` specifies the template version located in the S3 bucket of the same region in which you want to create this new stack:
@@ -182,7 +180,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
 ## TODOs ##
 
 * Support Search Head Pooling to go from 1:N searcher/indexer to N:N searcher/indexer topology
-* Add HA to potential single points of failure such as Cluster Master, License Master or Chef Server
+* Add HA to potential single points of failure such as Cluster Master, License Master
 * Add Auto Scale to Splunk Indexer and/or Search Head tier
 * Apply recommended EC2 instance type & proper sizing
 * Support Splunk AMIs
