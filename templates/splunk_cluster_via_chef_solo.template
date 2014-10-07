@@ -26,7 +26,7 @@
     },
 
     "ClusterSecurityKey" : {
-      "Description" : "Security key to authenticate traffic between cluster nodes."
+      "Description" : "Security key to authenticate traffic between cluster nodes.",
       "Type" : "String",
       "Default" : "password",
       "AllowedPattern" : "[-_ a-zA-Z0-9]+",
@@ -74,7 +74,7 @@
     },
 
     "Subdomain" : {
-      "Description" : "[Optional] Subdomain to use for new DNS record for cluster",
+      "Description" : "[Optional] Subdomain (without trailing dot) to use for new DNS record for cluster",
       "Type" : "String",
       "MinLength": "0",
       "MaxLength": "255",
@@ -217,7 +217,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster search head."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -228,7 +227,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkSearchHeadSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-search-head",
           "ResourceName"   : "SearchHead"
         }
@@ -240,7 +248,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 1."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -251,7 +258,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode1"
         }
@@ -263,7 +279,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 2."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -274,7 +289,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode2"
         }
@@ -286,7 +310,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 3."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -297,7 +320,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode3"
         }
@@ -310,7 +342,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 4."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -321,7 +352,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode4"
         }
@@ -334,7 +374,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 5."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -345,7 +384,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode5"
         }
@@ -358,7 +406,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 6."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -369,7 +416,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode6"
         }
@@ -382,7 +438,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 7."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -393,7 +448,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode7"
         }
@@ -406,7 +470,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 8."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -417,7 +480,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode8"
         }
@@ -430,7 +502,6 @@
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 9."
       },
-      "DependsOn" : "MasterNode",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_server_via_chef_solo.template" ]]},
@@ -441,7 +512,16 @@
           "KeyName"        : { "Ref" : "KeyName" },
           "SecurityGroup"  : { "Ref" : "SplunkIndexerSecurityGroup" },
           "ClusterSecurityKey" : { "Ref" : "ClusterSecurityKey" },
-          "ClusterMasterIP"   : { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] },
+          "ClusterMasterIP"   : { "Fn::If" : [
+            "AddDNSRecords",
+            { "Fn::Join" : [ "", [
+              "cm", ".", "int", ".",
+              {"Ref" : "Subdomain"},
+              {"Fn::If" : [ "SubdomainEmpty", "", "." ]},
+              {"Ref" : "HostedZoneName"}
+            ] ] },
+            { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
+          ]},
           "SplunkRole"     : "cluster-peer",
           "ResourceName"   : "PeerNode9"
         }
@@ -468,7 +548,7 @@
           ] ]
         },
         "Type" : "CNAME",
-        "TTL" : "900",
+        "TTL" : "60",
         "ResourceRecords" : [
           { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateDnsName" ] }
         ]
@@ -495,7 +575,7 @@
           ] ]
         },
         "Type" : "CNAME",
-        "TTL" : "900",
+        "TTL" : "60",
         "ResourceRecords" : [
           { "Fn::GetAtt" : [ "SearchHead", "Outputs.PrivateDnsName" ] }
         ]
@@ -522,7 +602,7 @@
           ] ]
         },
         "Type" : "A",
-        "TTL" : "900",
+        "TTL" : "60",
         "ResourceRecords" : [
           { "Fn::GetAtt" : [ "MasterNode", "Outputs.PublicIp" ] }
         ]
@@ -549,7 +629,7 @@
           ] ]
         },
         "Type" : "A",
-        "TTL" : "900",
+        "TTL" : "60",
         "ResourceRecords" : [
           { "Fn::GetAtt" : [ "SearchHead", "Outputs.PublicIp" ] }
         ]
@@ -576,7 +656,7 @@
           ] ]
         },
         "Type" : "A",
-        "TTL" : "900",
+        "TTL" : "60",
         "ResourceRecords" : {
           "Fn::If" : [
             "LargeDeployment", [

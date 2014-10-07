@@ -79,7 +79,7 @@
     },
 
     "Subdomain" : {
-      "Description" : "[Optional] Subdomain to use for new DNS record for cluster",
+      "Description" : "[Optional] Subdomain (without trailing dot) to use for new DNS record for cluster",
       "Type" : "String",
       "MinLength": "0",
       "MaxLength": "255",
