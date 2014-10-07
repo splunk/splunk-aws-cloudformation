@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Add a Chef server to a VPC environment. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Add a Chef server to a VPC environment.",
 
   "Parameters" : {
     "VpcId" : {
