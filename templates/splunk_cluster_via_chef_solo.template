@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Create splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC. **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description" : "Create splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a given VPC.",
 
   "Parameters" : {
     "VpcId" : {
@@ -84,7 +84,7 @@
     },
 
     "HostedZoneName" : {
-      "Description" : "[Optional] Hosted zone name (without trailing dot) to create subdomains e.g. 'example.com'. AWS Router 53 must be the DNS web service for specified domain",
+      "Description" : "[Optional] Hosted zone name (without trailing dot) to create subdomains e.g. 'example.com'. Router 53 must be the DNS service for specified domain",
       "Type" : "String",
       "Default": "",
       "AllowedPattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][-a-zA-Z0-9]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][-A-Za-z0-9]*[A-Za-z0-9])?$",
@@ -699,7 +699,7 @@
         "http://",
         {"Ref" : "MasterNodeDNSRecord"}
       ]]},
-      "Description" : "Splunk URL of Master Node"
+      "Description" : "Splunk URL of cluster master"
     },
 
     "MasterNodeIpAddress" : {
@@ -713,7 +713,7 @@
         "http://",
         {"Ref" : "SearchHeadDNSRecord"}
       ]]},
-      "Description" : "Splunk URL of Search Head"
+      "Description" : "Splunk URL of cluster search head"
     },
 
     "SearchHeadIpAddress" : {
