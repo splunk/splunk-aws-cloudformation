@@ -74,7 +74,7 @@
     },
 
     "Subdomain" : {
-      "Description" : "[Optional] Subdomain (without trailing dot) to use for new DNS record for cluster",
+      "Description" : "[Optional] Subdomain to use for new DNS records for cluster (without trailing dot)",
       "Type" : "String",
       "MinLength": "0",
       "MaxLength": "255",
@@ -84,7 +84,7 @@
     },
 
     "HostedZoneName" : {
-      "Description" : "[Optional] Hosted zone name (without trailing dot) to create subdomains e.g. 'example.com'. Router 53 must be the DNS service for specified domain",
+      "Description" : "[Optional] Hosted zone name e.g. 'example.com' (without trailing dot) - Route 53 must be the DNS service for specified domain",
       "Type" : "String",
       "Default": "",
       "AllowedPattern": "^(([a-zA-Z0-9]|[a-zA-Z0-9][-a-zA-Z0-9]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][-A-Za-z0-9]*[A-Za-z0-9])?$",
