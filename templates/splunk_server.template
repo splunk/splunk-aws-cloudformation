@@ -95,7 +95,7 @@
 
     "CookbookBucketName" : {
       "Description" : "Name of S3 bucket with Chef recipes & roles",
-      "Default" : "splunk-cloud-test",
+      "Default" : "splunk-cloud",
       "Type" : "String"
     }
   },

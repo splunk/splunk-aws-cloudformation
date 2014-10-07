@@ -103,7 +103,7 @@
   "Mappings" : {
 
     "AWSRegion2s3Bucket" : {
-      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-test.s3.amazonaws.com" },
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
       "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
       "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
       "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },
