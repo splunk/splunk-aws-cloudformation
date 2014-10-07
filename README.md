@@ -200,7 +200,7 @@ As mentioned above, you can optionally provide you own license in Step 2. Curren
 
 ## Support ##
 
-1. Splunk CloudFormation templates will not be Splunk supported
+1. Splunk CloudFormation templates are community supported
 2. Help can be found through the broader community at [Splunk Answers](http://answers.splunk.com/)
 3. Issues should be filed here: https://github.com/splunk/splunk-cloudformation/issues
 
