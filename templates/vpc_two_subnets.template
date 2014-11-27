@@ -155,7 +155,7 @@
     "NATDevice" : {
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
-        "InstanceType" : "t1.micro",
+        "InstanceType" : "t2.micro",
         "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMINAT", { "Ref" : "AWS::Region" }, "64" ]},
         "NetworkInterfaces" : [{
           "GroupSet"                 : [{ "Ref" : "NATSecurityGroup" }],
