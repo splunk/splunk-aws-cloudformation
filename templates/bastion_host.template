@@ -125,11 +125,6 @@
       "Metadata": {
         "AWS::CloudFormation::Init": {
             "config": {
-              "packages": {
-                "yum": {
-                  "python-boto": []
-                }
-              },
               "files": {
                "/home/ec2-user/create-keypair" : {
                 "content" : {
@@ -196,6 +191,7 @@
           "Fn::Base64" : { "Fn::Join" : ["", [
                 "#!/bin/bash -v\n",
                 "yum update -y aws-cfn-bootstrap\n",
+                "yum install -y python-boto\n",
 
                 "#do some chef things before the cfn-init due to race issues\n",
                 "/bin/mkdir -p /etc/chef\n",
