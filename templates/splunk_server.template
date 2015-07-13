@@ -171,9 +171,7 @@
               "yum" : {
                 "gcc" : [],
                 "make" : [],
-                "ruby19" : [],
-                "ruby19-irb" : [],
-                "ruby19-devel" : []
+                "ruby-devel" : []
               }
             },
             "files" : {
@@ -262,12 +260,9 @@
                 "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r SplunkServerHost ",
                 "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
 
-                "#ensure environment runs ruby 1.9\n",
-                "alternatives --set ruby /usr/bin/ruby1.9\n",
-
                 "#install chef without docs\n",
-                "gem install ohai --version 6.16.0 --no-ri --no-rdoc || error_exit 'Failed to install ohai'\n",
-                "gem install chef --version 10.24.0 --no-ri --no-rdoc || error_exit 'Failed to install chef'\n",
+                "gem install ohai --version 8.5.0 --no-ri --no-rdoc || error_exit 'Failed to install ohai'\n",
+                "gem install chef --version 12.4.1 --no-ri --no-rdoc || error_exit 'Failed to install chef'\n",
 
                 "#run chef-solo with solo.rb config\n",
                 "chown -R chef /etc/chef/*\n",
