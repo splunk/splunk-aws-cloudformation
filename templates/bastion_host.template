@@ -55,28 +55,18 @@
   },
 
   "Mappings" : {
-    "AWSInstanceType2Arch" : {
-      "t1.micro"    : { "Arch" : "64" },
-      "m1.small"    : { "Arch" : "64" },
-      "m1.medium"   : { "Arch" : "64" },
-      "m1.large"    : { "Arch" : "64" },
-      "m1.xlarge"   : { "Arch" : "64" },
-      "m2.xlarge"   : { "Arch" : "64" },
-      "m2.2xlarge"  : { "Arch" : "64" },
-      "m2.4xlarge"  : { "Arch" : "64" },
-      "c1.medium"   : { "Arch" : "64" },
-      "c1.xlarge"   : { "Arch" : "64" }
-    },
 
     "AWSRegionArch2AMI" : {
-      "us-east-1"      : { "64" : "ami-3275ee5b" },
-      "us-west-1"      : { "64" : "ami-66d1fc23" },
-      "us-west-2"      : { "64" : "ami-ecbe2adc" },
-      "eu-west-1"      : { "64" : "ami-44939930" },
-      "sa-east-1"      : { "64" : "ami-dd6bb0c0" },
-      "ap-southeast-1" : { "64" : "ami-aa9ed2f8" },
-      "ap-southeast-2" : { "64" : "ami-363eaf0c" },
-      "ap-northeast-1" : { "64" : "ami-173fbf16" }
+      "us-east-1"      : { "64HVM" : "ami-1ecae776" },
+      "us-west-1"      : { "64HVM" : "ami-d114f295" },
+      "us-west-2"      : { "64HVM" : "ami-e7527ed7" },
+      "eu-central-1"   : { "64HVM" : "ami-a8221fb5" },
+      "eu-west-1"      : { "64HVM" : "ami-a10897d6" },
+      "sa-east-1"      : { "64HVM" : "ami-b52890a8" },
+      "ap-southeast-1" : { "64HVM" : "ami-68d8e93a" },
+      "ap-southeast-2" : { "64HVM" : "ami-fd9cecc7" },
+      "ap-northeast-1" : { "64HVM" : "ami-cbf90ecb" },
+      "cn-north-1"     : { "64HVM" : "ami-f239abcb" }
     }
   },
 
@@ -189,8 +179,8 @@
         }
       },
       "Properties" : {
-        "InstanceType" : "t1.micro",
-        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
+        "InstanceType" : "t2.micro",
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64HVM" ]},
         "NetworkInterfaces" : [{
           "GroupSet"                 : [{ "Ref" : "BastionSecurityGroup" }],
           "AssociatePublicIpAddress" : "true",

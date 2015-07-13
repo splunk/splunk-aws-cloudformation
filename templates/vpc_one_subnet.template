@@ -26,16 +26,7 @@
   },
 
   "Mappings" : {
-
-     "AWSRegionArch2AMINAT" : {
-       "us-east-1"      : { "64" : "ami-f619c29f" },
-       "us-west-1"      : { "64" : "ami-3bcc9e7e" },
-       "us-west-2"      : { "64" : "ami-52ff7262" },
-       "eu-west-1"      : { "64" : "ami-e5e2d991" },
-       "sa-east-1"      : { "64" : "ami-0039e61d" },
-       "ap-southeast-1" : { "64" : "ami-02eb9350" },
-       "ap-northeast-1" : { "64" : "ami-14d86d15" }
-     }
+  
   },
 
   "Resources" : {

@@ -20,7 +20,7 @@
       "Description" : "Splunk Server EC2 instance type",
       "Type" : "String",
       "Default" : "t1.micro",
-      "AllowedValues" : [ "t1.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge","m3.xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge" ],
+      "AllowedValues" : ["t2.micro", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge"],
       "ConstraintDescription" : "must be a valid EC2 instance type."
     },
 
@@ -84,29 +84,54 @@
   },
 
   "Mappings" : {
+
     "AWSInstanceType2Arch" : {
-      "t1.micro"    : { "Arch" : "64" },
-      "m1.small"    : { "Arch" : "64" },
-      "m1.medium"   : { "Arch" : "64" },
-      "m1.large"    : { "Arch" : "64" },
-      "m1.xlarge"   : { "Arch" : "64" },
-      "m2.xlarge"   : { "Arch" : "64" },
-      "m2.2xlarge"  : { "Arch" : "64" },
-      "m2.4xlarge"  : { "Arch" : "64" },
-      "c1.medium"   : { "Arch" : "64" },
-      "c1.xlarge"   : { "Arch" : "64" },
-      "cc1.4xlarge" : { "Arch" : "64" }
+      "t2.micro"    : { "Arch" : "64HVM" },
+      "m3.medium"   : { "Arch" : "64HVM" },
+      "m3.large"    : { "Arch" : "64HVM" },
+      "m3.xlarge"   : { "Arch" : "64HVM" },
+      "m3.2xlarge"  : { "Arch" : "64HVM" },
+      "m4.large"    : { "Arch" : "64HVM" },
+      "m4.xlarge"   : { "Arch" : "64HVM" },
+      "m4.2xlarge"  : { "Arch" : "64HVM" },
+      "m4.4xlarge"  : { "Arch" : "64HVM" },
+      "m4.10xlarge" : { "Arch" : "64HVM" },
+      "c3.large"    : { "Arch" : "64HVM" },
+      "c3.xlarge"   : { "Arch" : "64HVM" },
+      "c3.2xlarge"  : { "Arch" : "64HVM" },
+      "c3.4xlarge"  : { "Arch" : "64HVM" },
+      "c3.8xlarge"  : { "Arch" : "64HVM" },
+      "c4.large"    : { "Arch" : "64HVM" },
+      "c4.xlarge"   : { "Arch" : "64HVM" },
+      "c4.2xlarge"  : { "Arch" : "64HVM" },
+      "c4.4xlarge"  : { "Arch" : "64HVM" },
+      "c4.8xlarge"  : { "Arch" : "64HVM" },
+      "r3.large"    : { "Arch" : "64HVM" },
+      "r3.xlarge"   : { "Arch" : "64HVM" },
+      "r3.2xlarge"  : { "Arch" : "64HVM" },
+      "r3.4xlarge"  : { "Arch" : "64HVM" },
+      "r3.8xlarge"  : { "Arch" : "64HVM" },
+      "i2.xlarge"   : { "Arch" : "64HVM" },
+      "i2.2xlarge"  : { "Arch" : "64HVM" },
+      "i2.4xlarge"  : { "Arch" : "64HVM" },
+      "i2.8xlarge"  : { "Arch" : "64HVM" },
+      "d2.xlarge"   : { "Arch" : "64HVM" },
+      "d2.2xlarge"  : { "Arch" : "64HVM" },
+      "d2.4xlarge"  : { "Arch" : "64HVM" },
+      "d2.8xlarge"  : { "Arch" : "64HVM" }
     },
 
     "AWSRegionArch2AMI" : {
-      "us-east-1"      : { "64" : "ami-bba18dd2" },
-      "us-west-1"      : { "64" : "ami-a43909e1" },
-      "us-west-2"      : { "64" : "ami-ccf297fc" },
-      "eu-west-1"      : { "64" : "ami-5256b825" },
-      "sa-east-1"      : { "64" : "ami-c99130d4" },
-      "ap-southeast-1" : { "64" : "ami-b4baeee6" },
-      "ap-southeast-2" : { "64" : "ami-5ba83761" },
-      "ap-northeast-1" : { "64" : "ami-0d13700c" }
+      "us-east-1"      : { "64HVM" : "ami-1ecae776" },
+      "us-west-1"      : { "64HVM" : "ami-d114f295" },
+      "us-west-2"      : { "64HVM" : "ami-e7527ed7" },
+      "eu-central-1"   : { "64HVM" : "ami-a8221fb5" },
+      "eu-west-1"      : { "64HVM" : "ami-a10897d6" },
+      "sa-east-1"      : { "64HVM" : "ami-b52890a8" },
+      "ap-southeast-1" : { "64HVM" : "ami-68d8e93a" },
+      "ap-southeast-2" : { "64HVM" : "ami-fd9cecc7" },
+      "ap-northeast-1" : { "64HVM" : "ami-cbf90ecb" },
+      "cn-north-1"     : { "64HVM" : "ami-f239abcb" }
     }
   },
 
@@ -216,7 +241,7 @@
       },
       "Properties" : {
         "InstanceType" : { "Ref" : "InstanceType" },
-        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64" ]},
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "64HVM" ]},
         "NetworkInterfaces" : [{
           "GroupSet"                 : [{ "Ref" : "SplunkServerSecurityGroup" }],
           "AssociatePublicIpAddress" : "true",
