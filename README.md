@@ -179,8 +179,8 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 ## TODOs ##
 
-* Add support for new and updated instances types, e.g. i2.xlarge
-* Support Search Head Pooling to go from 1:N searcher/indexer to N:N searcher/indexer topology
+* ~~Add support for new and updated instances types, e.g. i2.xlarge~~ (DONE)
+* Support search head clustering to go from 1:N searcher/indexer to N:N searcher/indexer topology
 * Add HA to potential single points of failure such as Cluster Master, License Master
 * Add Auto Scale to Splunk Indexer and/or Search Head tier
 * Apply recommended EC2 instance type & proper sizing
