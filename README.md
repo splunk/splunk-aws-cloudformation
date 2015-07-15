@@ -162,7 +162,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
 | [vpc_two_subnets.template](../master/templates/vpc_two_subnets.template) | CF template to create a VPC with Public and Private subnets in a single AZ. This includes a NAT instance in Public subnet to enable Private subnet instances to access the Internet. | [Launch Stack][vpc_two_subnets_us_east_1]
 | [vpc_one_subnet.template](../master/templates/vpc_one_subnet.template) | CF template to create a VPC with one Public subnet in a single AZ. Used by `master.template` | [Launch Stack][vpc_one_subnet_us_east_1]
 | [splunk_server.template](../master/templates/splunk_server.template) | CF template to add a Splunk server to specified VPC and subnet given a Splunk role: cluster-master, cluster-peer or cluster-search-head. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_us_east_1]
-| [splunk_server_via_chef.template](../master/templates/splunk_server_via_chef.template) | CF template equivalent to `splunk_server.template` but requires a separate Chef Server. Used by `splunk_cluster_via_chef.template` | [Launch Stack][splunk_server_via_chef_solo_us_east_1]
+| [splunk_server_via_chef.template](../master/templates/splunk_server_via_chef.template) | CF template equivalent to `splunk_server.template` but requires a separate Chef Server. Used by `splunk_cluster_via_chef.template` | [Launch Stack][splunk_server_via_chef_us_east_1]
 | [splunk_server_with_license.template](../master/templates/splunk_server_with_license.template) | CF template equivalent to `splunk_server.template` with the addition of specifying a license from a private S3 bucket, for example when creating a splunk license master. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_with_license_us_east_1]
 | [bastion_host.template](../master/templates/bastion_host.template) | CF template to add a Bastion host micro instance to specified VPC. It creates a new EC2 keypair to access further instances. Used by `master.template` | [Launch Stack][bastion_host_us_east_1]
 | [chef_server.template](../master/templates/chef_server.template) | CF template to add a Chef server to specified VPC. It references remote cookbooks and config files stored in public S3 bucket https://splunk-cloud.s3.amazonaws.com/. | [Launch Stack][chef_server_us_east_1]
@@ -179,10 +179,12 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 ## TODOs ##
 
-* ~~Add support for new and updated instances types, e.g. i2.xlarge~~ (DONE)
+* ~~Support indexer clustering~~ (DONE)
+* ~~Support new & updated instances types, e.g. i2.xlarge~~ (DONE)
 * Support search head clustering to go from 1:N searcher/indexer to N:N searcher/indexer topology
-* Add HA to potential single points of failure such as Cluster Master, License Master
-* Add Auto Scale to Splunk Indexer and/or Search Head tier
+* Support multi-AZ and multi-site indexer clustering
+* Add HA to potential single points of failure such as cluster master, license master
+* Apply auto scaling to search head cluster
 * Apply recommended EC2 instance type & proper sizing
 * Support Splunk AMIs
 * Support Windows AMIs
