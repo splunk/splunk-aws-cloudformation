@@ -22,7 +22,7 @@
   },
 
   "Conditions": {
-  
+
     "CreateSubnet02": { "Fn::Or" : [
       { "Fn::Equals" : [ "2", { "Ref": "SubnetCount" } ] },
       { "Fn::Equals" : [ "3", { "Ref": "SubnetCount" } ] }
@@ -53,6 +53,7 @@
         "CidrBlock" : "192.168.1.0/24",
         "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": "" } ] },
         "Tags" : [
+          {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "AWS::StackName"}, "Subnet01" ] ] }},
           {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
           {"Key" : "Network", "Value" : "Public" }
         ]
@@ -67,6 +68,7 @@
         "CidrBlock" : "192.168.2.0/24",
         "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": "" } ] },
         "Tags" : [
+          {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "AWS::StackName"}, "Subnet02" ] ] }},
           {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
           {"Key" : "Network", "Value" : "Public" }
         ]
@@ -81,6 +83,7 @@
         "CidrBlock" : "192.168.3.0/24",
         "AvailabilityZone": { "Fn::Select": [ "2", { "Fn::GetAZs": "" } ] },
         "Tags" : [
+          {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "AWS::StackName"}, "Subnet03" ] ] }},
           {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
           {"Key" : "Network", "Value" : "Public" }
         ]
@@ -180,23 +183,6 @@
         ]
       },
       "Description" : "Comma-separated list of public subnet IDs across different AZs"
-    },
-
-    "PublicSubnet01ID" :  {
-      "Value" : {"Ref" : "PublicSubnet01"},
-      "Description" : "Public subnet 01 ID"
-    },
-
-    "PublicSubnet02ID" :  {
-      "Condition": "CreateSubnet02",
-      "Value" : {"Ref" : "PublicSubnet02"},
-      "Description" : "Public subnet 02 ID"
-    },
-
-    "PublicSubnet03ID" :  {
-      "Condition": "CreateSubnet03",
-      "Value" : {"Ref" : "PublicSubnet03"},
-      "Description" : "Public subnet 03 ID"
     }
   }
 }
