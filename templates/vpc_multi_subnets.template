@@ -1,0 +1,202 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Build an AWS VPC with one or more public subnets in differents AZs.",
+
+  "Parameters" : {
+
+    "SubnetCount": {
+      "Description": "Number of subnets [1,2,3]. Defaults to single public subnet",
+      "Type": "String",
+      "Default": "1",
+      "AllowedValues": [
+        "1",
+        "2",
+        "3"
+      ]
+    }
+  },
+
+  "Mappings" : {
+  
+  },
+
+  "Conditions": {
+  
+    "CreateSubnet02": { "Fn::Or" : [
+      { "Fn::Equals" : [ "2", { "Ref": "SubnetCount" } ] },
+      { "Fn::Equals" : [ "3", { "Ref": "SubnetCount" } ] }
+    ]},
+    "CreateSubnet03": { "Fn::Equals" : [ "3", { "Ref": "SubnetCount" } ] }
+  },
+
+  "Resources" : {
+
+    "VPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : "192.168.0.0/16",
+        "EnableDnsSupport" : true,
+        "EnableDnsHostnames" : true,
+        "Tags" : [
+          {"Key" : "Name", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicSubnet01" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "192.168.1.0/24",
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": "" } ] },
+        "Tags" : [
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicSubnet02" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Condition": "CreateSubnet02",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "192.168.2.0/24",
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": "" } ] },
+        "Tags" : [
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicSubnet03" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Condition": "CreateSubnet03",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "192.168.3.0/24",
+        "AvailabilityZone": { "Fn::Select": [ "2", { "Fn::GetAZs": "" } ] },
+        "Tags" : [
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "AttachGateway" : {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "Properties" : {
+         "VpcId" : { "Ref" : "VPC" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+
+    "PublicRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},
+        "Tags" : [
+          {"Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+          {"Key" : "Network", "Value" : "Public" }
+        ]
+      }
+    },
+
+    "PublicRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+
+    "PublicSubnet01RouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet01" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+
+    "PublicSubnet02RouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Condition": "CreateSubnet02",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet02" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+
+    "PublicSubnet03RouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Condition": "CreateSubnet03",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet03" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    }
+  },
+
+  "Outputs" : {
+
+    "VpcID" : {
+      "Value" : {"Ref" : "VPC"},
+      "Description" : "VPC ID of newly created VPC"
+    },
+
+    "PublicSubnets" : {
+      "Value" : {
+        "Fn::If" : [
+          "CreateSubnet03",
+          { "Fn::Join" : [", ", [
+            { "Ref" : "PublicSubnet01" },
+            { "Ref" : "PublicSubnet02" },
+            { "Ref" : "PublicSubnet03" }
+          ]]},
+          { "Fn::If" : [
+              "CreateSubnet02",
+              { "Fn::Join" : [", ", [
+                { "Ref" : "PublicSubnet01" },
+                { "Ref" : "PublicSubnet02" }
+              ]]},
+              { "Ref" : "PublicSubnet01" }
+            ]
+          }
+        ]
+      },
+      "Description" : "Comma-separated list of public subnet IDs across different AZs"
+    },
+
+    "PublicSubnet01ID" :  {
+      "Value" : {"Ref" : "PublicSubnet01"},
+      "Description" : "Public subnet 01 ID"
+    },
+
+    "PublicSubnet02ID" :  {
+      "Condition": "CreateSubnet02",
+      "Value" : {"Ref" : "PublicSubnet02"},
+      "Description" : "Public subnet 02 ID"
+    },
+
+    "PublicSubnet03ID" :  {
+      "Condition": "CreateSubnet03",
+      "Value" : {"Ref" : "PublicSubnet03"},
+      "Description" : "Public subnet 03 ID"
+    }
+  }
+}
