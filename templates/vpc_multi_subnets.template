@@ -7,12 +7,12 @@
 
     "SubnetCount": {
       "Description": "Number of subnets [1,2,3]. Defaults to single public subnet",
-      "Type": "String",
+      "Type": "Number",
+      "MinValue": "1",
+      "MaxValue": "3",
       "Default": "1",
       "AllowedValues": [
-        "1",
-        "2",
-        "3"
+        "1", "2", "3"
       ]
     }
   },
@@ -157,12 +157,17 @@
 
   "Outputs" : {
 
-    "VpcID" : {
+    "VpcId" : {
       "Value" : {"Ref" : "VPC"},
       "Description" : "VPC ID of newly created VPC"
     },
 
-    "PublicSubnets" : {
+    "MainSubnetId" : {
+      "Value" : { "Ref" : "PublicSubnet01" },
+      "Description" : "Main default subnet ID"
+    },
+
+    "SubnetIds" : {
       "Value" : {
         "Fn::If" : [
           "CreateSubnet03",
@@ -182,7 +187,7 @@
           }
         ]
       },
-      "Description" : "Comma-separated list of public subnet IDs across different AZs"
+      "Description" : "Comma-separated list of all public subnet IDs across different AZs"
     }
   }
 }

@@ -7,13 +7,13 @@
     "VpcId" : {
       "Type" : "String",
       "Default" : "vpc-",
-      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)"
+      "Description" : "Vpc ID of your existing Virtual Private Cloud (VPC)"
     },
 
     "SubnetId" : {
       "Type" : "String",
       "Default" : "subnet-",
-      "Description" : "SubnetId of an existing Public facing subnet in your Virtual Private Cloud (VPC)"
+      "Description" : "Subnet ID of an existing public facing subnet in your Virtual Private Cloud (VPC)"
     },
 
     "KeyName" : {

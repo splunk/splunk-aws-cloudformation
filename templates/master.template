@@ -43,12 +43,25 @@
     },
 
     "ClusterSize" : {
-      "Description" : "Splunk Cluster size",
-      "Type" : "String",
-      "Default" : "small",
-      "AllowedValues" : [ "small", "medium", "large" ],
-      "ConstraintDescription" : "must be 'small', 'medium', or 'large.'",
-      "Description" : "Cluster size ('small' for 3 indexers, 'medium' for 5 or 'large' for 9 indexers)"
+      "Description" : "Splunk Cluster size or number of peer nodes - must be between 1 and 9",
+      "Type" : "Number",
+      "MinValue": "3",
+      "MaxValue": "9",
+      "Default" : "3",
+      "AllowedValues": [
+        "1", "2", "3", "4", "5", "6", "7", "8", "9"
+      ]
+    },
+
+    "ClusterAZCount": {
+      "Description": "Number of Availability Zones [1,2,3] - set to > 1 for Multi-AZ Clustering",
+      "Type": "Number",
+      "MinValue": "1",
+      "MaxValue": "3",
+      "Default": "1",
+      "AllowedValues": [
+        "1", "2", "3"
+      ]
     },
 
     "ClusterSecurityKey" : {
@@ -103,7 +116,7 @@
   "Mappings" : {
 
     "AWSRegion2s3Bucket" : {
-      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-test.s3.amazonaws.com" },
       "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
       "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
       "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },
@@ -125,14 +138,13 @@
     "VPC" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
-        "Comment" : "VPC with 1 public subnet."
+        "Comment" : "VPC with 1 or more subnets across different AZs."
       },
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
-                         "cloudformation-templates", "vpc_one_subnet.template" ]]},
+                         "cloudformation-templates", "vpc_multi_subnets.template" ]]},
         "Parameters" : {
-          "KeyName" : { "Ref" : "KeyName" },
-          "SSHFrom" : { "Ref" : "SSHFrom" }
+          "SubnetCount" : { "Ref" : "ClusterAZCount"}
         }
       }
     },
@@ -147,8 +159,8 @@
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "bastion_host.template" ]]},
         "Parameters" : {
-          "VpcId"          : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
-          "SubnetId"       : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+          "VpcId"          : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcId" ] },
+          "SubnetId"       : { "Fn::GetAtt" : [ "VPC", "Outputs.MainSubnetId" ] },
           "KeyName"        : { "Ref" : "KeyName" },
           "BastionKeyName" : { "Ref" : "BastionKeyName" },
           "SSHFrom"        : { "Ref" : "SSHFrom" }
@@ -159,15 +171,16 @@
     "SplunkCluster" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
-        "Comment" : "Splunk cluster in public subnet."
+        "Comment" : "Splunk cluster across one or more AZs."
       },
       "DependsOn" : "BastionHost",
       "Properties" : {
         "TemplateURL" : { "Fn::Join" : ["/", [{ "Fn::FindInMap" : [ "AWSRegion2s3Bucket", { "Ref" : "AWS::Region" }, "s3Bucket" ]},
                           "cloudformation-templates", "splunk_cluster.template" ]]},
         "Parameters" : {
-          "VpcId"               : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
-          "SubnetId"            : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+          "VpcId"               : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcId" ] },
+          "SubnetIds"           : { "Fn::GetAtt" : [ "VPC", "Outputs.SubnetIds" ] },
+          "SubnetCount"         : { "Ref" : "ClusterAZCount" },
           "ClusterSize"         : { "Ref" : "ClusterSize" },
           "ClusterSecurityKey"  : { "Ref" : "ClusterSecurityKey" },
           "InstanceType"        : { "Ref" : "InstanceType" },
@@ -184,13 +197,13 @@
 
   "Outputs" : {
 
-    "VpcID" : {
-      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcID" ] },
+    "VpcId" : {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.VpcId" ] },
       "Description" : "VPC ID of newly created VPC"
     },
 
-    "PublicSubnetID" :  {
-      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.PublicSubnetID" ] },
+    "SubnetIds" :  {
+      "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.SubnetIds" ] },
       "Description" : "Public subnet ID"
     },
 
