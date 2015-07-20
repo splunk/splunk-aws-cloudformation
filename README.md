@@ -29,7 +29,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
   * For **KeyName** field, specify an EC2 keypair to access the Bastion host. If you don't have an EC2 keypair already, refer to [AWS EC2 keypair guide](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
   * For **BastionKeyName**, specify a unique EC2 keypair to access private instances from the Bastion host. You can leave the default value as is.
   * For **ClusterSecurityKey** field, specify security key which will be used to authenticate traffic between cluster nodes. You can leave default value as is.
-  * For **ClusterSize** field, specify your deployment size in terms of number of indexer peer nodes. Value must be an integer between 2 and 9. Defaults to 3.
+  * For **ClusterSize** field, specify your deployment size in terms of number of indexer peer nodes. Nodes will be evenly distributed across the different AZs (refer to ClusterAZCount parameter). Value must be an integer between 2 and 9. Defaults to 3.
   * For **ClusterAZCount** field, specify number of Availability Zones over which to distribute nodes; set to > 1 for Multi-AZ clustering. Defaults to 1 (single AZ).
   * For **InstanceType**, specify instance type for Splunk servers. You can leave default value as is.
   * For **SSHFrom**, specify the public IP address range that can SSH into your Bastion host. By default, Bastion host can be accessed from anywhere using **KeyName** keypair.
@@ -72,6 +72,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
                      ParameterKey=BastionKeyName,ParameterValue=<MyBastionKeyName> \
                      ParameterKey=ClusterSecurityKey,ParameterValue=<MyClusterSecurityKey> \
                      ParameterKey=ClusterSize,ParameterValue=<MyClusterSize> \
+                     ParameterKey=ClusterAZCount,ParameterValue=<MyClusterAZCount> \
                      ParameterKey=InstanceType,ParameterValue=<MyInstanceType> \
                      ParameterKey=SSHFrom,ParameterValue=<SSHFrom> \
                      ParameterKey=CIDRBlock,ParameterValue=<CIDRBlock> \
@@ -159,9 +160,10 @@ A single template will provision your new distributed Splunk cluster in a new VP
 | Template | Description | Launch in US East Region
 | --- | --- |:---:
 | [master.template](../master/templates/master.template) | **Master** CF template to create a Splunk Cluster in a VPC with Public subnet in a single AZ. This also includes a Bastion host micro instance. Uses sub-templates `vpc_one_subnet.template`, `bastion_host.template`, `splunk_cluster.template` | [Launch Stack][master_us_east_1]
-| [splunk_cluster.template](../master/templates/splunk_cluster.template) | CF template to create Splunk cluster of 1 master node, 1 search head and the option of 3, 5 or 9 peer nodes in a specified VPC. Uses sub-stacks `splunk_server.template` and `splunk_server_with_license.template` and used by `master.template` | [Launch Stack][splunk_cluster_us_east_1]
-| [vpc_two_subnets.template](../master/templates/vpc_two_subnets.template) | CF template to create a VPC with Public and Private subnets in a single AZ. This includes a NAT instance in Public subnet to enable Private subnet instances to access the Internet. | [Launch Stack][vpc_two_subnets_us_east_1]
-| [vpc_one_subnet.template](../master/templates/vpc_one_subnet.template) | CF template to create a VPC with one Public subnet in a single AZ. Used by `master.template` | [Launch Stack][vpc_one_subnet_us_east_1]
+| [splunk_cluster.template](../master/templates/splunk_cluster.template) | CF template to create Splunk cluster of 1 master node, 1 search head and a user-specified number of peer nodes (between 2 and 9) in a specified VPC. Uses sub-stacks `splunk_server.template` and `splunk_server_with_license.template` and used by `master.template` | [Launch Stack][splunk_cluster_us_east_1]
+| [vpc_multi_subnets.template](../master/templates/vpc_multi_subnets.template) | CF template to create a VPC with one or more public subnets in different AZs. Used by `master.template` | [Launch Stack][vpc_multi_subnets_us_east_1]
+| [vpc_two_subnets.template](../master/templates/vpc_two_subnets.template) | CF template to create a VPC with public and private subnets in a single AZ. This includes a NAT instance in public subnet to enable private subnet instances to access the Internet. | [Launch Stack][vpc_two_subnets_us_east_1]
+| [vpc_one_subnet.template](../master/templates/vpc_one_subnet.template) | CF template to create a VPC with one public subnet in a single AZ. | [Launch Stack][vpc_one_subnet_us_east_1]
 | [splunk_server.template](../master/templates/splunk_server.template) | CF template to add a Splunk server to specified VPC and subnet given a Splunk role: cluster-master, cluster-peer or cluster-search-head. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_us_east_1]
 | [splunk_server_via_chef.template](../master/templates/splunk_server_via_chef.template) | CF template equivalent to `splunk_server.template` but requires a separate Chef Server. Used by `splunk_cluster_via_chef.template` | [Launch Stack][splunk_server_via_chef_us_east_1]
 | [splunk_server_with_license.template](../master/templates/splunk_server_with_license.template) | CF template equivalent to `splunk_server.template` with the addition of specifying a license from a private S3 bucket, for example when creating a splunk license master. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_with_license_us_east_1]
@@ -170,6 +172,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 [master_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~Master|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/master.template "Launch Master Stack"
 [splunk_cluster_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~Splunk-Cluster|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/splunk_cluster.template "Launch Splunk Cluster Stack"
+[vpc_multi_subnets_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~VPC-Multi-Subnets|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/vpc_multi_subnets.template "Launch VPC Multi Subnets Stack"
 [vpc_two_subnets_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~VPC-Two-Subnets|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/vpc_two_subnets.template "Launch VPC Two Subnets Stack"
 [vpc_one_subnet_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~VPC-One-Subnet|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/vpc_one_subnet.template "Launch VPC One Subnet Stack"
 [splunk_server_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~Splunk-Server|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/splunk_server.template "Launch Splunk Server Stack"
