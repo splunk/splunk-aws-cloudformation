@@ -204,7 +204,7 @@
 
     "SubnetIds" :  {
       "Value" : { "Fn::GetAtt" : [ "VPC", "Outputs.SubnetIds" ] },
-      "Description" : "Public subnet ID"
+      "Description" : "Public subnets IDs"
     },
 
     "BastionPublicIp" : {

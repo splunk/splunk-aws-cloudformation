@@ -51,12 +51,12 @@ A single template will provision your new distributed Splunk cluster in a new VP
 </div>
 
 Congratulations! You now have a new fully functional distributed Splunk cluster on AWS ready for your data!<br/>
-Here are the various EC2 instances that you should see, say with a `large` deployment (9 indexers):
+Here are the various EC2 instances that you should see, say with a deployment of `ClusterSize=6`:
 <div>
     <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/ec2_instances_snapshot.png"/>
 </div>
 
-Note that you can re-use the same VPC from the above master stack, to add as many Splunk cluster stacks as needed by directly using [splunk_cluster.template](../master/templates/splunk_cluster.template) template, and following the same steps as above. Make sure to specify the outputs VPC ID and Public Subnet ID of above master stack, as parameters for Splunk cluster stacks.
+Note that you can re-use the same VPC from the above master stack, to add as many Splunk cluster stacks as needed by directly using [splunk_cluster.template](../master/templates/splunk_cluster.template) template, and following the same steps as above. Make sure to specify the outputs VPC ID and Subnet IDs of above master stack, as parameters for Splunk cluster stacks.
 
 ## Create Splunk Cluster using AWS CLI ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS Command Line Interface.<br/>
@@ -130,8 +130,8 @@ A single template will provision your new distributed Splunk cluster in a new VP
                 ], 
                 "Tags": [], 
                 "Outputs": [
-                    { "Description": "VPC ID of newly created VPC", "OutputKey": "VpcID", "OutputValue": "vpc-cb677ba9" }, 
-                    { "Description": "Public subnet ID", "OutputKey": "PublicSubnetID", "OutputValue": "subnet-24c02541" }, 
+                    { "Description": "VPC ID of newly created VPC", "OutputKey": "VpcId", "OutputValue": "vpc-cb677ba9" }, 
+                    { "Description": "Public subnets IDs", "OutputKey": "SubnetIds", "OutputValue": "subnet-24c02541" }, 
                     { "Description": "Bastion Host Public IP address", "OutputKey": "BastionPublicIp", "OutputValue": "54.193.109.23" },
                     { "Description": "Splunk URL of cluster master", "OutputKey": "MasterNodeURL", "OutputValue": "http://cm.splunk.example.com" }, 
                     { "Description": "Public IP address of cluster master", "OutputKey": "MasterNodeIpAddress", "OutputValue": "54.165.231.139" }, 
