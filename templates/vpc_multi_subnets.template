@@ -6,7 +6,7 @@
   "Parameters" : {
 
     "SubnetCount": {
-      "Description": "Number of subnets [1,2,3]. Defaults to single public subnet",
+      "Description": "Number of subnets [1,2,3]; defaults to single public subnet",
       "Type": "Number",
       "MinValue": "1",
       "MaxValue": "3",

@@ -43,18 +43,18 @@
     },
 
     "ClusterSize" : {
-      "Description" : "Splunk Cluster size or number of peer nodes - must be between 1 and 9",
+      "Description" : "Splunk Cluster size or number of peer nodes; must be between 2 and 9",
       "Type" : "Number",
-      "MinValue": "3",
+      "MinValue": "2",
       "MaxValue": "9",
       "Default" : "3",
       "AllowedValues": [
-        "1", "2", "3", "4", "5", "6", "7", "8", "9"
+        "2", "3", "4", "5", "6", "7", "8", "9"
       ]
     },
 
     "ClusterAZCount": {
-      "Description": "Number of Availability Zones [1,2,3] - set to > 1 for Multi-AZ Clustering",
+      "Description": "Number of Availability Zones [1,2,3] to distribute nodes over; set to > 1 for Multi-AZ Clustering",
       "Type": "Number",
       "MinValue": "1",
       "MaxValue": "3",
@@ -65,7 +65,7 @@
     },
 
     "ClusterSecurityKey" : {
-      "Description" : "Security key to authenticate traffic between cluster nodes.",
+      "Description" : "Security key to authenticate traffic between cluster nodes",
       "Type" : "String",
       "Default" : "password",
       "AllowedPattern" : "[-_ a-zA-Z0-9]+",
@@ -116,7 +116,7 @@
   "Mappings" : {
 
     "AWSRegion2s3Bucket" : {
-      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-test.s3.amazonaws.com" },
+      "us-east-1" :      { "s3Bucket" : "https://splunk-cloud-us-east-1.s3.amazonaws.com" },
       "us-west-1" :      { "s3Bucket" : "https://splunk-cloud-us-west-1.s3.amazonaws.com" },
       "us-west-2" :      { "s3Bucket" : "https://splunk-cloud-us-west-2.s3.amazonaws.com" },
       "eu-west-1" :      { "s3Bucket" : "https://splunk-cloud-eu-west-1.s3.amazonaws.com" },

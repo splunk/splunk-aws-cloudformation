@@ -29,7 +29,8 @@ A single template will provision your new distributed Splunk cluster in a new VP
   * For **KeyName** field, specify an EC2 keypair to access the Bastion host. If you don't have an EC2 keypair already, refer to [AWS EC2 keypair guide](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
   * For **BastionKeyName**, specify a unique EC2 keypair to access private instances from the Bastion host. You can leave the default value as is.
   * For **ClusterSecurityKey** field, specify security key which will be used to authenticate traffic between cluster nodes. You can leave default value as is.
-  * For **ClusterSize** field, specify your deployment size between `small`, `medium`, and `large` (3, 5, 9 indexers respectively). You can leave default value as is.
+  * For **ClusterSize** field, specify your deployment size in terms of number of indexer peer nodes. Value must be an integer between 2 and 9. Defaults to 3.
+  * For **ClusterAZCount** field, specify number of Availability Zones over which to distribute nodes; set to > 1 for Multi-AZ clustering. Defaults to 1 (single AZ).
   * For **InstanceType**, specify instance type for Splunk servers. You can leave default value as is.
   * For **SSHFrom**, specify the public IP address range that can SSH into your Bastion host. By default, Bastion host can be accessed from anywhere using **KeyName** keypair.
   * For **CIDRBlock**, specify the public IP address range that is allowed to send data to this cluster. By default, data can be received from anywhere.

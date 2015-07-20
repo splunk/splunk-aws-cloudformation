@@ -18,7 +18,7 @@
     },
 
     "SubnetCount": {
-      "Description": "Number of subnets over which to distribute the nodes. Must be no higher than number of subnets specified in SubnetIds parameter",
+      "Description": "Number of subnets over which to distribute the nodes; must be between 1 and 3, and must match number of subnets specified in SubnetIds parameter",
       "Type": "Number",
       "MinValue": "1",
       "MaxValue": "3",
@@ -29,13 +29,13 @@
     },
 
     "ClusterSize" : {
-      "Description" : "Splunk Cluster size or number of peer nodes - must be between 1 and 9",
+      "Description" : "Splunk Cluster size or number of peer nodes; must be between 2 and 9",
       "Type" : "Number",
-      "MinValue": "3",
+      "MinValue": "2",
       "MaxValue": "9",
       "Default" : "3",
       "AllowedValues": [
-        "1", "2", "3", "4", "5", "6", "7", "8", "9"
+        "2", "3", "4", "5", "6", "7", "8", "9"
       ]
     },
 
@@ -135,11 +135,30 @@
     "AddDNSRecords" : { "Fn::Not" : [
       { "Fn::Equals" : [{ "Ref": "HostedZoneName" }, ""]}
     ]},
-    "MediumDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "5"] },
-    "LargeDeployment" : { "Fn::Equals" : [{ "Ref": "ClusterSize" }, "9"] },
-    "MediumOrLargeDeployment" : { "Fn::Or" : [
-      { "Condition": "MediumDeployment" },
-      { "Condition": "LargeDeployment" }
+    "CreatePeerNode09": { "Fn::Equals" : [ "9", { "Ref": "ClusterSize" } ] },
+    "CreatePeerNode08": { "Fn::Or" : [
+      { "Fn::Equals" : [ "8", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode09" }
+    ]},
+    "CreatePeerNode07": { "Fn::Or" : [
+      { "Fn::Equals" : [ "7", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode08" }
+    ]},
+    "CreatePeerNode06": { "Fn::Or" : [
+      { "Fn::Equals" : [ "6", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode07" }
+    ]},
+    "CreatePeerNode05": { "Fn::Or" : [
+      { "Fn::Equals" : [ "5", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode06" }
+    ]},
+    "CreatePeerNode04": { "Fn::Or" : [
+      { "Fn::Equals" : [ "4", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode05" }
+    ]},
+    "CreatePeerNode03": { "Fn::Or" : [
+      { "Fn::Equals" : [ "3", { "Ref": "ClusterSize" } ] },
+      { "Condition" : "CreatePeerNode04" }
     ]}
   },
 
@@ -264,7 +283,7 @@
       }
     },
 
-    "PeerNode1" : {
+    "PeerNode01" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 1."
@@ -296,12 +315,12 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode1"
+          "ResourceName"   : "PeerNode01"
         }
       }
     },
 
-    "PeerNode2" : {
+    "PeerNode02" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 2."
@@ -333,13 +352,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode2"
+          "ResourceName"   : "PeerNode02"
         }
       }
     },
 
-    "PeerNode3" : {
+    "PeerNode03" : {
       "Type" : "AWS::CloudFormation::Stack",
+      "Condition": "CreatePeerNode03",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 3."
       },
@@ -370,14 +390,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode3"
+          "ResourceName"   : "PeerNode03"
         }
       }
     },
 
-    "PeerNode4" : {
+    "PeerNode04" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "MediumOrLargeDeployment",
+      "Condition": "CreatePeerNode04",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 4."
       },
@@ -408,14 +428,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode4"
+          "ResourceName"   : "PeerNode04"
         }
       }
     },
 
-    "PeerNode5" : {
+    "PeerNode05" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "MediumOrLargeDeployment",
+      "Condition": "CreatePeerNode05",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 5."
       },
@@ -446,14 +466,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode5"
+          "ResourceName"   : "PeerNode05"
         }
       }
     },
 
-    "PeerNode6" : {
+    "PeerNode06" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "LargeDeployment",
+      "Condition": "CreatePeerNode06",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 6."
       },
@@ -484,14 +504,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode6"
+          "ResourceName"   : "PeerNode06"
         }
       }
     },
 
-    "PeerNode7" : {
+    "PeerNode07" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "LargeDeployment",
+      "Condition": "CreatePeerNode07",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 7."
       },
@@ -522,14 +542,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode7"
+          "ResourceName"   : "PeerNode07"
         }
       }
     },
 
-    "PeerNode8" : {
+    "PeerNode08" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "LargeDeployment",
+      "Condition": "CreatePeerNode08",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 8."
       },
@@ -560,14 +580,14 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode8"
+          "ResourceName"   : "PeerNode08"
         }
       }
     },
 
-    "PeerNode9" : {
+    "PeerNode09" : {
       "Type" : "AWS::CloudFormation::Stack",
-      "Condition": "LargeDeployment",
+      "Condition": "CreatePeerNode09",
       "Metadata" : {
         "Comment" : "Splunk cluster peer node 9."
       },
@@ -598,7 +618,7 @@
             { "Fn::GetAtt" : [ "MasterNode", "Outputs.PrivateIp" ] }
           ]},
           "SplunkRole"     : "cluster-peer",
-          "ResourceName"   : "PeerNode9"
+          "ResourceName"   : "PeerNode09"
         }
       }
     },
@@ -732,37 +752,79 @@
         },
         "Type" : "A",
         "TTL" : "60",
-        "ResourceRecords" : {
-          "Fn::If" : [
-            "LargeDeployment", [
-              { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode6", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode7", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode8", "Outputs.PublicIp" ] },
-              { "Fn::GetAtt" : [ "PeerNode9", "Outputs.PublicIp" ] }
+        "ResourceRecords" : { "Fn::If" : [
+          "CreatePeerNode09", [
+            { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode06", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode07", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode08", "Outputs.PublicIp" ] },
+            { "Fn::GetAtt" : [ "PeerNode09", "Outputs.PublicIp" ] }
+          ],
+          { "Fn::If" : [
+            "CreatePeerNode08", [
+              { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode06", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode07", "Outputs.PublicIp" ] },
+              { "Fn::GetAtt" : [ "PeerNode08", "Outputs.PublicIp" ] }
             ],
             { "Fn::If" : [
-                "MediumDeployment",
-                [
-                  { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] }
+              "CreatePeerNode07", [
+                { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode06", "Outputs.PublicIp" ] },
+                { "Fn::GetAtt" : [ "PeerNode07", "Outputs.PublicIp" ] }
+              ],
+              { "Fn::If" : [
+                "CreatePeerNode06", [
+                  { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] },
+                  { "Fn::GetAtt" : [ "PeerNode06", "Outputs.PublicIp" ] }
                 ],
-                [
-                  { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-                  { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] }
-                ]
-              ]
-            }
-          ]
-        }
+                { "Fn::If" : [
+                  "CreatePeerNode05", [
+                    { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                    { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+                    { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+                    { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] },
+                    { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] }
+                  ],
+                  { "Fn::If" : [
+                    "CreatePeerNode04", [
+                      { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                      { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+                      { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] },
+                      { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] }
+                    ],
+                    { "Fn::If" : [
+                      "CreatePeerNode03", [
+                        { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                        { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] },
+                        { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] }
+                      ], [
+                        { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+                        { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] }
+                      ]
+                    ] }
+                  ] }
+                ] }
+              ] }
+            ] }
+          ] }
+        ] }
       }
     }
   },
@@ -806,38 +868,24 @@
     },
 
     "PeerNodesIpAddresses" : {
-      "Value" : {
-        "Fn::If" : [
-          "LargeDeployment",
-          { "Fn::Join" : [", ", [
-            { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode6", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode7", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode8", "Outputs.PublicIp" ] },
-            { "Fn::GetAtt" : [ "PeerNode9", "Outputs.PublicIp" ] }
-          ]]},
-          { "Fn::If" : [
-              "MediumDeployment",
-              { "Fn::Join" : [", ", [
-                { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode4", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode5", "Outputs.PublicIp" ] }
-              ]]},
-              { "Fn::Join" : [", ", [
-                { "Fn::GetAtt" : [ "PeerNode1", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode2", "Outputs.PublicIp" ] },
-                { "Fn::GetAtt" : [ "PeerNode3", "Outputs.PublicIp" ] }
-              ]]}
-            ]
-          }
-        ]
-      },
+      "Value" : { "Fn::Join" : [ "", [
+        { "Fn::GetAtt" : [ "PeerNode01", "Outputs.PublicIp" ] },
+        { "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode02", "Outputs.PublicIp" ] } ] ] },
+        { "Fn::If" : [ "CreatePeerNode03", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode03", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode04", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode04", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode05", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode05", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode06", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode06", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode07", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode07", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode08", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode08", "Outputs.PublicIp" ] } ] ] }, "" ] },
+        { "Fn::If" : [ "CreatePeerNode09", {
+          "Fn::Join" : [",", [ "", { "Fn::GetAtt" : [ "PeerNode09", "Outputs.PublicIp" ] } ] ] }, "" ] }
+      ]]},
       "Description" : "List of public IP address of all cluster peer nodes"
     }
   }
