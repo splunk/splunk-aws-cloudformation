@@ -4,7 +4,7 @@
 #####**Simple AWS CloudFormation templates for automated Splunk deployments.**
 
 
-***License***<br>
+***Splunk License***<br>
 Before getting started with the template configuration, you will need to make your Splunk license available via an http(s) download.  The simplest way to do this is to upload your license file to S3.  The following steps will guide you through that process.
 
  1. From the AWS Console, select "S3" under the "Storage & Content Delivery" heading.
