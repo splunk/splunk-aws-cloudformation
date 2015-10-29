@@ -194,10 +194,8 @@
         "AWS::CloudFormation::Init" : {
           "config" : {
             "packages" : {
-              "yum" : {
-                "gcc" : [],
-                "make" : [],
-                "ruby-devel" : []
+              "rpm" : {
+                "chef-client" : "https://opscode-omnibus-packages.s3.amazonaws.com/el/7/x86_64/chef-12.5.1-1.el7.x86_64.rpm"
               }
             },
             "files" : {
@@ -217,20 +215,20 @@
                   "}"
                 ]]},
                 "mode" : "000644",
-                "owner" : "chef",
+                "owner" : "root",
                 "group" : "root"
               },
-              "/etc/chef/solo.rb" : {
+              "/etc/chef/client.rb" : {
                 "content" : { "Fn::Join" : ["", [
                   "log_level :info\n",
                   "log_location STDOUT\n",
-                  "file_cache_path \"/var/chef-solo\"\n",
+                  "file_cache_path \"/var/chef\"\n",
                   "cookbook_path \"/etc/chef/cookbooks\"\n",
                   "role_path \"/etc/chef/roles\"\n",
                   "json_attribs \"/etc/chef/node.json\"\n"
                 ]] },
                 "mode"  : "000644",
-                "owner" : "chef",
+                "owner" : "root",
                 "group" : "root"
               }
             },
@@ -269,13 +267,6 @@
 
                 "yum update -y aws-cfn-bootstrap\n",
 
-                "#do some chef things before the cfn-init due to race issues\n",
-                "/bin/mkdir -p /etc/chef\n",
-                "/bin/mkdir -p /var/lib/chef\n",
-                "/bin/mkdir -p /var/log/chef\n",
-                "/usr/sbin/groupadd chef -r\n",
-                "/usr/sbin/useradd chef -r -s /bin/sh -d /var/lib/chef -g chef\n",
-
                 "#helper function\n",
                 "function error_exit\n",
                 "{\n",
@@ -286,14 +277,8 @@
                 "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r SplunkServerHost ",
                 "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
 
-                "#install chef without docs\n",
-                "gem install ohai --version 8.5.0 --no-ri --no-rdoc || error_exit 'Failed to install ohai'\n",
-                "gem install chef --version 12.4.1 --no-ri --no-rdoc || error_exit 'Failed to install chef'\n",
-
-                "#run chef-solo with solo.rb config\n",
-                "chown -R chef /etc/chef/*\n",
-                "/bin/mkdir -p /var/chef-solo\n",
-                "/usr/local/bin/chef-solo -c /etc/chef/solo.rb || error_exit 'Failed to run chef-solo'\n",
+                "#run chef client in local mode with client.rb config\n",
+                "chef-client -z -c /etc/chef/client.rb || error_exit 'Failed to run chef-client'\n",
 
                 "#all is well so signal success\n",
                 "/opt/aws/bin/cfn-signal -e 0 -r \"Splunk server setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
