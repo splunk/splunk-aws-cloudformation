@@ -278,8 +278,8 @@
                 "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r SplunkServerHost ",
                 "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
 
-                "#run chef client in local mode with client.rb config\n",
-                "chef-client -z -c /etc/chef/client.rb || error_exit 'Failed to run chef-client'\n",
+                "#run chef solo with client.rb config\n",
+                "chef-solo -c /etc/chef/client.rb || error_exit 'Failed to run chef-solo'\n",
 
                 "#all is well so signal success\n",
                 "/opt/aws/bin/cfn-signal -e 0 -r \"Splunk server setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
