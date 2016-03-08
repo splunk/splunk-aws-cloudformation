@@ -2,6 +2,8 @@
 
 Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk distributed cluster on AWS.
 
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=splunkstack&templateURL=https://splunk-cloud.s3.amazonaws.com/cloudformation-templates/master.template)
+
 ## Benefits ##
 
 * Incorporates Splunk **best practices** for operations and administration
@@ -215,8 +217,5 @@ As mentioned above, you can optionally provide you own license in Step 2. Curren
 
 * Splunk Chef Cookbook: While AWS Cloudformation is used to launch and connect various AWS resources, Chef recipes for Splunk are used to provision the deployed machines based on corresponding role such as Splunk indexer, search head, etc. For more info, see [Splunk Cookbook](https://github.com/rarsan/splunk_cookbook) a fork from the great work by [BestBuy.Com](https://github.com/bestbuycom/splunk_cookbook)
 
-* Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guides
+* Splunk Cluster & Index Replication: The above templates deploy Splunk in a cluster topology to achieve data availability & recovery. For more info, see [Basic Cluster Architecture](http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Basicclusterarchitecture) in Splunk Enterprise guide
 
-## License ##
-
-The Splunk AWS CloudFormation is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
