@@ -21,7 +21,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 1. Open Amazon CloudFormation console at https://console.aws.amazon.com/cloudformation
 2. Click **Create Stack** button. In the **Create A New Stack** dialog, provide a name for your stack. For Template Source, you can select either:
-  * **Upload template file** and browse to your local copy of [master.template](../master/templates/master.template)<br>
+  * **Upload template file** and browse to your local copy of [master.template](templates/master.template)<br>
   OR,
   * **Provide an S3 URL to template** and paste the appropriate S3 link for `master.template` depending on your currently selected AWS region. For example, for the `us-west-1` region:<br>
 `http://splunk-cloud-us-west-1.s3.amazonaws.com/cloudformation-templates/master.template`
@@ -42,21 +42,21 @@ A single template will provision your new distributed Splunk cluster in a new VP
 5. Click **Create** button. Grab a coffee and come back in ~20 min when status of your parent stack shows `CREATE_COMPLETE`.
 6. Select **Outputs** tab of this newly created stack and note the VPC ID, Public Subnet ID, Bastion's public IP as well as all Cluster node IPs - and optionally URL for Cluster Master, Search Head and Indexer Tier if **HostedZoneName** was set:
 <div>
-    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/master_output.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/multi-node-via-chef/docs/master_output.png"/>
 </div>
 
 7. Type Cluster Master's IP (or URL, if HostedZoneName set, pending DNS propagation) in your favorite browser, and navigate to Settings >> Clustering to see all components of your newly created Splunk cluster. In few minutes, the cluster will become valid & complete as soon as initial index replication completes:
 <div>
-    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/splunk_clustering_snapshot.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/multi-node-via-chef/docs/splunk_clustering_snapshot.png"/>
 </div>
 
 Congratulations! You now have a new fully functional distributed Splunk cluster on AWS ready for your data!<br/>
 Here are the various EC2 instances that you should see, say with a deployment of `ClusterSize=6`:
 <div>
-    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/docs/ec2_instances_snapshot.png"/>
+    <img src="https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/master/multi-node-via-chef/docs/ec2_instances_snapshot.png"/>
 </div>
 
-Note that you can re-use the same VPC from the above master stack, to add as many Splunk cluster stacks as needed by directly using [splunk_cluster.template](../master/templates/splunk_cluster.template) template, and following the same steps as above. Make sure to specify the outputs VPC ID and Subnet IDs of above master stack, as parameters for Splunk cluster stacks.
+Note that you can re-use the same VPC from the above master stack, to add as many Splunk cluster stacks as needed by directly using [splunk_cluster.template](templates/splunk_cluster.template) template, and following the same steps as above. Make sure to specify the outputs VPC ID and Subnet IDs of above master stack, as parameters for Splunk cluster stacks.
 
 ## Create Splunk Cluster using AWS CLI ##
 The following is a step-by-step guide to create your own Splunk cluster using AWS Command Line Interface.<br/>
@@ -82,7 +82,7 @@ A single template will provision your new distributed Splunk cluster in a new VP
                      ParameterKey=SplunkLicenseBucket,ParameterValue="" \
         --capabilities "CAPABILITY_IAM"
 
-    Note: You could also point to your local copy of [master.template](../master/templates/master.template) using `--template-body` instead of `--template-url` in the previous command:
+    Note: You could also point to your local copy of [master.template](templates/master.template) using `--template-body` instead of `--template-url` in the previous command:
 
         --template-body file:///home/local/splunk-cloudformation/templates/master.template \
 
@@ -159,16 +159,16 @@ A single template will provision your new distributed Splunk cluster in a new VP
 
 | Template | Description | Launch in US East Region
 | --- | --- |:---:
-| [master.template](../master/templates/master.template) | **Master** CF template to create a Splunk Cluster in a VPC with Public subnet in a single AZ. This also includes a Bastion host micro instance. Uses sub-templates `vpc_one_subnet.template`, `bastion_host.template`, `splunk_cluster.template` | [Launch Stack][master_us_east_1]
-| [splunk_cluster.template](../master/templates/splunk_cluster.template) | CF template to create Splunk cluster of 1 master node, 1 search head and a user-specified number of peer nodes (between 2 and 9) in a specified VPC. Uses sub-stacks `splunk_server.template` and `splunk_server_with_license.template` and used by `master.template` | [Launch Stack][splunk_cluster_us_east_1]
-| [vpc_multi_subnets.template](../master/templates/vpc_multi_subnets.template) | CF template to create a VPC with one or more public subnets in different AZs. Used by `master.template` | [Launch Stack][vpc_multi_subnets_us_east_1]
-| [vpc_two_subnets.template](../master/templates/vpc_two_subnets.template) | CF template to create a VPC with public and private subnets in a single AZ. This includes a NAT instance in public subnet to enable private subnet instances to access the Internet. | [Launch Stack][vpc_two_subnets_us_east_1]
-| [vpc_one_subnet.template](../master/templates/vpc_one_subnet.template) | CF template to create a VPC with one public subnet in a single AZ. | [Launch Stack][vpc_one_subnet_us_east_1]
-| [splunk_server.template](../master/templates/splunk_server.template) | CF template to add a Splunk server to specified VPC and subnet given a Splunk role: cluster-master, cluster-peer or cluster-search-head. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_us_east_1]
-| [splunk_server_via_chef.template](../master/templates/splunk_server_via_chef.template) | CF template equivalent to `splunk_server.template` but requires a separate Chef Server. Used by `splunk_cluster_via_chef.template` | [Launch Stack][splunk_server_via_chef_us_east_1]
-| [splunk_server_with_license.template](../master/templates/splunk_server_with_license.template) | CF template equivalent to `splunk_server.template` with the addition of specifying a license from a private S3 bucket, for example when creating a splunk license master. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_with_license_us_east_1]
-| [bastion_host.template](../master/templates/bastion_host.template) | CF template to add a Bastion host micro instance to specified VPC. It creates a new EC2 keypair to access further instances. Used by `master.template` | [Launch Stack][bastion_host_us_east_1]
-| [chef_server.template](../master/templates/chef_server.template) | CF template to add a Chef server to specified VPC. It references remote cookbooks and config files stored in public S3 bucket https://splunk-cloud.s3.amazonaws.com/. | [Launch Stack][chef_server_us_east_1]
+| [master.template](templates/master.template) | **Master** CF template to create a Splunk Cluster in a VPC with Public subnet in a single AZ. This also includes a Bastion host micro instance. Uses sub-templates `vpc_one_subnet.template`, `bastion_host.template`, `splunk_cluster.template` | [Launch Stack][master_us_east_1]
+| [splunk_cluster.template](templates/splunk_cluster.template) | CF template to create Splunk cluster of 1 master node, 1 search head and a user-specified number of peer nodes (between 2 and 9) in a specified VPC. Uses sub-stacks `splunk_server.template` and `splunk_server_with_license.template` and used by `master.template` | [Launch Stack][splunk_cluster_us_east_1]
+| [vpc_multi_subnets.template](templates/vpc_multi_subnets.template) | CF template to create a VPC with one or more public subnets in different AZs. Used by `master.template` | [Launch Stack][vpc_multi_subnets_us_east_1]
+| [vpc_two_subnets.template](templates/vpc_two_subnets.template) | CF template to create a VPC with public and private subnets in a single AZ. This includes a NAT instance in public subnet to enable private subnet instances to access the Internet. | [Launch Stack][vpc_two_subnets_us_east_1]
+| [vpc_one_subnet.template](templates/vpc_one_subnet.template) | CF template to create a VPC with one public subnet in a single AZ. | [Launch Stack][vpc_one_subnet_us_east_1]
+| [splunk_server.template](templates/splunk_server.template) | CF template to add a Splunk server to specified VPC and subnet given a Splunk role: cluster-master, cluster-peer or cluster-search-head. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_us_east_1]
+| [splunk_server_via_chef.template](templates/splunk_server_via_chef.template) | CF template equivalent to `splunk_server.template` but requires a separate Chef Server. Used by `splunk_cluster_via_chef.template` | [Launch Stack][splunk_server_via_chef_us_east_1]
+| [splunk_server_with_license.template](templates/splunk_server_with_license.template) | CF template equivalent to `splunk_server.template` with the addition of specifying a license from a private S3 bucket, for example when creating a splunk license master. Used by `splunk_cluster.template` | [Launch Stack][splunk_server_with_license_us_east_1]
+| [bastion_host.template](templates/bastion_host.template) | CF template to add a Bastion host micro instance to specified VPC. It creates a new EC2 keypair to access further instances. Used by `master.template` | [Launch Stack][bastion_host_us_east_1]
+| [chef_server.template](templates/chef_server.template) | CF template to add a Chef server to specified VPC. It references remote cookbooks and config files stored in public S3 bucket https://splunk-cloud.s3.amazonaws.com/. | [Launch Stack][chef_server_us_east_1]
 
 [master_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~Master|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/master.template "Launch Master Stack"
 [splunk_cluster_us_east_1]: https://console.aws.amazon.com/cloudformation/home?#cstack=sn~Splunk-Cluster|turl~https://splunk-cloud-us-east-1.s3.amazonaws.com/cloudformation-templates/splunk_cluster.template "Launch Splunk Cluster Stack"
