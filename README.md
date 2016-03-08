@@ -1,15 +1,8 @@
 # Splunk AWS CloudFormation #
 
-Easy-to-use AWS CloudFormation templates to deploy a pre-configured Splunk single instance or distributed cluster on AWS.
+Easy-to-use AWS CloudFormation templates to deploy pre-configured Splunk single instance or distributed cluster on AWS.
 
-## Benefits ##
-
-* Incorporates Splunk **best practices** for operations and administration
-* **Hides all complexity** behind setting up distributed Splunk infrastructure
-* **Extensible** and **customizable** templates to fit custom needs
-* **Accelerates** test drive & deployment time down to minutes
-
-## Content ##
+Click through desired configuration for more details:
 
 Directory | Description
 ----------|-------------
@@ -17,7 +10,12 @@ Directory | Description
 [multi-node](./multi-node) | Splunk multi-node cluster
 [multi-node-via-chef](./multi-node-via-chef) | Splunk multi-node indexer cluster provisioned via Chef
 
-Click through desired configuration for usage instructions in README in each directory
+## Benefits ##
+
+* Incorporates Splunk **best practices** for operations and administration
+* **Hides all complexity** behind setting up distributed Splunk infrastructure
+* **Extensible** and **customizable** templates to fit custom needs
+* **Accelerates** test drive & deployment time down to minutes
 
 ## Support ##
 
