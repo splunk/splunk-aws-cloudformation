@@ -7,6 +7,7 @@
    "Type": "String",
    "Default": "c4.4xlarge",
    "AllowedValues": [
+
     "c4.2xlarge",
     "c4.4xlarge",
     "c4.8xlarge"
@@ -105,7 +106,9 @@
   "VPC": {
    "Type": "AWS::EC2::VPC",
    "Properties": {
-    "CidrBlock": "10.0.0.0/16",
+    "CidrBlock": {
+      "Ref": "VPCCIDR"
+    },
     "Tags": [
      {
       "Key": "Application",
