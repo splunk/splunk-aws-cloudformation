@@ -812,7 +812,7 @@
    }
   },
   "Credentials": {
-   "Description": "Admin credentials for Splunk search head URL",
+   "Description": "Admin credentials for Splunk search head URL.",
    "Value": {
     "Fn::Join": [
      ":",
