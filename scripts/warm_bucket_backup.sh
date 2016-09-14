@@ -1,4 +1,5 @@
 #!/bin/bash
+# warm_bucket_backup.sh
 
 #- Splunk variables
 splunk_db=/opt/splunk
