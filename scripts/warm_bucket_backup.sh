@@ -1,5 +1,7 @@
 #!/bin/bash
-# warm_bucket_backup.sh
+#- warm_bucket_backup.sh
+
+#- note: this does not backup the configuration files associated with splunk.  
 
 #- Splunk variables
 splunk_db=/opt/splunk
