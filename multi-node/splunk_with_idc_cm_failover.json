@@ -753,8 +753,8 @@
               "/etc/splunk/splunk.license" : {
                 "source" : { "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
                 "mode"  : "000600",
-                "owner" : "root",
-                "group" : "root",
+                "owner" : "splunk",
+                "group" : "splunk",
                 "authentication": "S3AccessCreds"
               }
             }
@@ -806,19 +806,30 @@
               "",
               [
                 "#!/bin/bash -v\n",
+                "/opt/splunk/bin/splunk status\n",
                 "exec &> /home/ec2-user/userdata.log\n",
+                "yum update -y aws-cfn-bootstrap\n",
+
                 "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
                 "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null)\n",
                 "hostname splunklicense\n",
                 "printf '%s\t%s\n' \"$LOCALIP\" 'splunklicense' >> /etc/hosts\n",
                 "HOME=/home/splunk /opt/splunk/bin/splunk stop\n",
-                "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
                 "mkdir -p /opt/splunk/etc/licenses/enterprise\n",
+
+                "# Install files from the metadata\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ", { "Ref": "AWS::StackName" },
+                "         --resource SplunkCMLaunchConfiguration",
+                "         --region ", { "Ref": "AWS::Region" }, "\n",
+
+                "mv /etc/splunk/splunk.license /opt/splunk/etc/licenses/enterprise/\n",
+                "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
                 "mkdir -p /opt/splunk/.splunk\n",
                 "chown -R splunk.splunk /opt/splunk/\n",
-                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
+
+                "#HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
-                "mv /etc/splunk/splunk.license /opt/splunk/etc/licenses/enterprise/\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
@@ -866,28 +877,12 @@
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -site default\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
-                "/opt/aws/bin/cfn-init -v ",
-                "         --stack ",
-                {
-                  "Ref": "AWS::StackName"
-                },
-                "         --resource SplunkCMLaunchConfiguration",
-                "         --region ",
-                {
-                  "Ref": "AWS::Region"
-                },
-                "\n",
+
                 "/opt/aws/bin/cfn-signal -e $? ",
-                "         --stack ",
-                {
-                  "Ref": "AWS::StackName"
-                },
-                "         --resource SplunkCMASG",
-                "         --region ",
-                {
-                  "Ref": "AWS::Region"
-                },
-                "\n",
+                "         --stack ", { "Ref": "AWS::StackName" },
+                "         --resource SplunkCMLaunchConfiguration",
+                "         --region ", { "Ref": "AWS::Region" }, "\n",
+
                 "usermod --expiredate 1 splunk\n"
               ]
             ]
@@ -1184,7 +1179,7 @@
       "Description": "License Server URL",
       "Value": {
         "Fn::Join": [
-          ":",
+          "",
           [
             "http://",
             {
@@ -1193,7 +1188,7 @@
                 "DNSName"
               ]
             },
-            "8000"
+            ":8000"
           ]
         ]
       }
