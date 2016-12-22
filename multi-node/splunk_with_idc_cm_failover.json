@@ -774,7 +774,6 @@
               "",
               [
                 "#!/bin/bash -v\n",
-                "/opt/splunk/bin/splunk status\n",
                 "exec &> /home/ec2-user/userdata.log\n",
                 "yum update -y aws-cfn-bootstrap\n",
 
