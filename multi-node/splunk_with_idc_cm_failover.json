@@ -53,11 +53,11 @@
       "Default": "3",
       "ConstraintDescription": "must be a valid number, 1-10"
     },
-    "SHCDecision": {
+    "SHCEnabled": {
       "Description": "Do you want to build a Splunk search head cluster?",
       "Type": "String",
       "Default": "no",
-      "AllowedValues": ["yes","no"]
+      "AllowedValues": ["yes", "no"]
     },
     "SHCCount": {
       "Description": "How many search head peers for your cluster?  [3-10]",
@@ -66,7 +66,7 @@
       "MaxValue": "10",
       "Default": "3",
       "ConstraintDescription": "must be a valid number, 3-10"
-      },
+    },
     "VPCCIDR": {
       "Description": "The address space that will be assigned to the entire VPC where Splunk will reside. (Recommend at least a /16)",
       "Type": "String",
@@ -96,8 +96,8 @@
     }
   },
   "Conditions" : {
-    "CreateSingleSearchHead" : {"Fn::Equals" : [{"Ref" : "SHCDecision"}, "no"]},
-    "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCDecision"}, "yes"]}
+    "CreateSingleSearchHead" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "no"]},
+    "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "yes"]}
   },
   "Mappings": {
     "RegionMap": {
@@ -124,14 +124,6 @@
     }
   },
   "Resources": {
-    "AccessKey": {
-      "Type": "AWS::IAM::AccessKey",
-      "Properties": {
-        "UserName": {
-          "Ref": "User"
-        }
-      }
-    },
     "VPC": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
@@ -476,6 +468,14 @@
             "CidrIp": {
               "Ref": "SSHLocation"
             }
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "8090",
+            "ToPort": "8090",
+            "CidrIp": {
+              "Ref": "VPCCIDR"
+            }
           }
         ]
       }
@@ -658,13 +658,321 @@
         }
       }
     },
-    "SplunkSearchIP": {
-      "Type": "AWS::EC2::EIP",
-      "DependsOn": "AttachGateway",
+
+    "SplunkSHCDeployer": {
+      "Type": "AWS::EC2::Instance",
+      "Condition": "CreateSHC",
+      "DependsOn": "SplunkCMASG",
       "Properties": {
-        "Domain": "vpc",
-        "InstanceId": {
-          "Ref": "SplunkSearchHeadInstance"
+        "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
+        "SecurityGroupIds": [
+          { "Ref": "SplunkSecurityGroup" },
+          { "Ref": "SplunkSearchHeadSecurityGroup" }
+        ],
+        "SubnetId": { "Ref": "SplunkSubnet1" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyName" },
+        "Tags": [
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
+          { "Key": "Role", "Value": "splunksearch" },
+          { "Key": "Name", "Value": "shc-deployer" }
+        ],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": { "Fn::FindInMap": [ "SplunkConfig", "searchhead-disk-size", "gb" ] }
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",                
+                "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
+                "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
+                "export SPLUNK_USER=splunk\n",
+                "export SPLUNK_BIN=/opt/splunk/bin/splunk\n",
+                "export SPLUNK_HOME=/opt/splunk\n",
+
+                "printf '%s\t%s\n' \"$LOCALIP\" 'splunk-shc-deployer' >> /etc/hosts\n",
+                "hostname splunk-shc-deployer\n",
+
+                "# Stop Splunk and reset password\n",
+                "service splunk stop\n",
+                "touch $SPLUNK_HOME/etc/.ui_login\n",
+                "mv $SPLUNK_HOME/etc/passwd $SPLUNK_HOME/etc/passwd.bak\n",
+                "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit user admin -password ", { "Ref": "SplunkAdminPassword" }, " -role admin -auth admin:changeme\n",
+
+                "# Wait for CM to initialize before linking up to LM\n",
+                "sleep 60\n",
+                "service splunk start\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit licenser-localslave ",
+                  "-master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+                "printf '\n%s\n%s = %s\n' [shclustering] pass4SymmKey  '", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, "'  >> /opt/splunk/etc/system/local/server.conf\n",
+                "printf '%s = %s\n' shcluster_label SplunkSHC >> /opt/splunk/etc/system/local/server.conf\n",
+
+                "service splunk restart\n",
+                "usermod --expiredate 1 splunk\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+    "SplunkSHCMember1": {
+      "Type": "AWS::EC2::Instance",
+      "Condition": "CreateSHC",
+      "DependsOn": "SplunkSHCDeployer",
+      "Properties": {
+        "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyName" },
+        "Tags": [
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
+          { "Key": "Role", "Value": "splunksearch" },
+          { "Key": "Name", "Value": "shc-sh1" }
+        ],
+        "NetworkInterfaces": [{
+          "GroupSet": [
+            { "Ref": "SplunkSecurityGroup" },
+            { "Ref": "SplunkSearchHeadSecurityGroup" }
+          ],
+          "AssociatePublicIpAddress": "true",
+          "DeviceIndex": "0",
+          "DeleteOnTermination": "true",
+          "SubnetId": { "Ref": "SplunkSubnet1" }
+        }],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": { "Fn::FindInMap": [ "SplunkConfig", "searchhead-disk-size", "gb" ] }
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",                
+                "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
+                "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
+                "export SPLUNK_USER=splunk\n",
+                "export SPLUNK_BIN=/opt/splunk/bin/splunk\n",
+                "export SPLUNK_HOME=/opt/splunk\n",
+
+                "printf '%s\t%s\n' \"$LOCALIP\" 'splunksearch' >> /etc/hosts\n",
+                "hostname splunksearch\n",
+
+                "# Stop Splunk and reset password\n",
+                "service splunk stop\n",
+                "touch $SPLUNK_HOME/etc/.ui_login\n",
+                "mv $SPLUNK_HOME/etc/passwd $SPLUNK_HOME/etc/passwd.bak\n",
+                "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit user admin -password ", { "Ref": "SplunkAdminPassword" }, " -role admin -auth admin:changeme\n",
+
+                "# Wait for CM to initialize before linking up to LM\n",
+                "sleep 60\n",
+                "service splunk start\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit licenser-localslave ",
+                  "-master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN init shcluster-config ",
+                  "-mgmt_uri https://$LOCALIP:8089 -replication_port 8090 -replication_factor 3 ",
+                  "-conf_deploy_fetch_url https://", { "Fn::GetAtt": [ "SplunkSHCDeployer", "PrivateIp" ] }, ":8089 ",
+                  "-shcluster_label SplunkSHC ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit cluster-config ",
+                  "-mode searchhead -master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "service splunk restart\n",
+                "usermod --expiredate 1 splunk\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+    "SplunkSHCMember2": {
+      "Type": "AWS::EC2::Instance",
+      "Condition": "CreateSHC",
+      "DependsOn": "SplunkSHCDeployer",
+      "Properties": {
+        "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyName" },
+        "Tags": [
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
+          { "Key": "Role", "Value": "splunksearch" },
+          { "Key": "Name", "Value": "shc-sh2" }
+        ],
+        "NetworkInterfaces": [{
+          "GroupSet": [
+            { "Ref": "SplunkSecurityGroup" },
+            { "Ref": "SplunkSearchHeadSecurityGroup" }
+          ],
+          "AssociatePublicIpAddress": "true",
+          "DeviceIndex": "0",
+          "DeleteOnTermination": "true",
+          "SubnetId": { "Ref": "SplunkSubnet1" }
+        }],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": { "Fn::FindInMap": [ "SplunkConfig", "searchhead-disk-size", "gb" ] }
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",                
+                "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
+                "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
+                "export SPLUNK_USER=splunk\n",
+                "export SPLUNK_BIN=/opt/splunk/bin/splunk\n",
+                "export SPLUNK_HOME=/opt/splunk\n",
+
+                "printf '%s\t%s\n' \"$LOCALIP\" 'splunksearch' >> /etc/hosts\n",
+                "hostname splunksearch\n",
+
+                "# Stop Splunk and reset password\n",
+                "service splunk stop\n",
+                "touch $SPLUNK_HOME/etc/.ui_login\n",
+                "mv $SPLUNK_HOME/etc/passwd $SPLUNK_HOME/etc/passwd.bak\n",
+                "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit user admin -password ", { "Ref": "SplunkAdminPassword" }, " -role admin -auth admin:changeme\n",
+
+                "# Wait for CM to initialize before linking up to LM\n",
+                "sleep 60\n",
+                "service splunk start\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit licenser-localslave ",
+                  "-master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN init shcluster-config ",
+                  "-mgmt_uri https://$LOCALIP:8089 -replication_port 8090 -replication_factor 3 ",
+                  "-conf_deploy_fetch_url https://", { "Fn::GetAtt": [ "SplunkSHCDeployer", "PrivateIp" ] }, ":8089 ",
+                  "-shcluster_label SplunkSHC ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit cluster-config ",
+                  "-mode searchhead -master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "service splunk restart\n",
+                "usermod --expiredate 1 splunk\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+
+    "SplunkSHCMember3": {
+      "Type": "AWS::EC2::Instance",
+      "Condition": "CreateSHC",
+      "DependsOn": "SplunkSHCDeployer",
+      "Properties": {
+        "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyName" },
+        "Tags": [
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
+          { "Key": "Role", "Value": "splunksearch" },
+          { "Key": "Name", "Value": "shc-sh3" }
+        ],
+        "NetworkInterfaces": [{
+          "GroupSet": [
+            { "Ref": "SplunkSecurityGroup" },
+            { "Ref": "SplunkSearchHeadSecurityGroup" }
+          ],
+          "AssociatePublicIpAddress": "true",
+          "DeviceIndex": "0",
+          "DeleteOnTermination": "true",
+          "SubnetId": { "Ref": "SplunkSubnet2" }
+        }],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": { "Fn::FindInMap": [ "SplunkConfig", "searchhead-disk-size", "gb" ] }
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",                
+                "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
+                "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id)\n",
+                "export SPLUNK_USER=splunk\n",
+                "export SPLUNK_BIN=/opt/splunk/bin/splunk\n",
+                "export SPLUNK_HOME=/opt/splunk\n",
+
+                "printf '%s\t%s\n' \"$LOCALIP\" 'splunksearch' >> /etc/hosts\n",
+                "hostname splunksearch\n",
+
+                "# Stop Splunk and reset password\n",
+                "service splunk stop\n",
+                "touch $SPLUNK_HOME/etc/.ui_login\n",
+                "mv $SPLUNK_HOME/etc/passwd $SPLUNK_HOME/etc/passwd.bak\n",
+                "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit user admin -password ", { "Ref": "SplunkAdminPassword" }, " -role admin -auth admin:changeme\n",
+
+                "# Wait for CM to initialize before linking up to LM\n",
+                "sleep 60\n",
+                "service splunk start\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit licenser-localslave ",
+                  "-master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN init shcluster-config ",
+                  "-mgmt_uri https://$LOCALIP:8089 -replication_port 8090 -replication_factor 3 ",
+                  "-conf_deploy_fetch_url https://", { "Fn::GetAtt": [ "SplunkSHCDeployer", "PrivateIp" ] }, ":8089 ",
+                  "-shcluster_label SplunkSHC ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN edit cluster-config ",
+                  "-mode searchhead -master_uri https://", { "Fn::GetAtt": [ "SplunkELB", "DNSName" ] }, ":8089 ",
+                  "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "# Bootstrap SHC captain\n",
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN bootstrap shcluster-captain ",
+                  "-servers_list \"",
+                    "https://", { "Fn::GetAtt": [ "SplunkSHCMember1", "PrivateIp" ] }, ":8089,",
+                    "https://", { "Fn::GetAtt": [ "SplunkSHCMember2", "PrivateIp" ] }, ":8089,",
+                    "https://$LOCALIP:8089\"",
+                  "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
+
+                "service splunk restart\n",
+                "usermod --expiredate 1 splunk\n"
+              ]
+            ]
+          }
         }
       }
     },
@@ -892,11 +1200,12 @@
                 "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
                 "mkdir -p /home/splunk/.splunk ; chown splunk:splunk /opt/splunk/.splunk\n",
                 "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
-                "printf '%s\t%s\n' \"",
+                "#printf '%s\t%s\n' \"",
                 {
-                  "Fn::GetAtt": [
-                    "SplunkSearchHeadInstance",
-                    "PrivateIp"
+                  "Fn::If" : [
+                    "CreateSHC",
+                    { "Fn::GetAtt": [ "SplunkSHCMember1", "PrivateIp" ] },
+                    { "Fn::GetAtt": [ "SplunkSearchHeadInstance", "PrivateIp" ] }
                   ]
                 },
                 "\" 'splunksearch' >> /etc/hosts\n",
@@ -908,15 +1217,16 @@
                   "Ref": "SplunkAdminPassword"
                 },
                 " -role admin -auth admin:changeme\n",
-                "sleep 90 && curl -k -u admin:",
+                "sleep 90;# && curl -k -u admin:",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
                 " https://",
                 {
-                  "Fn::GetAtt": [
-                    "SplunkSearchHeadInstance",
-                    "PrivateIp"
+                  "Fn::If" : [
+                    "CreateSHC",
+                    { "Fn::GetAtt": [ "SplunkSHCMember1", "PrivateIp" ] },
+                    { "Fn::GetAtt": [ "SplunkSearchHeadInstance", "PrivateIp" ] }
                   ]
                 },
                 ":8089/services/search/distributed/peers -d name=$LOCALIP:8089 -d remoteUsername=admin -d remotePassword=",
@@ -1042,26 +1352,37 @@
         }
       }
     },
-      "SHCASG": {
-      "Condition": "CreateSHC",
-      "Type": "AWS::AutoScaling::AutoScalingGroup",
+
+    "SplunkSHCLoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties": {
-        "VPCZoneIdentifier": [ 
-          {"Ref": "SplunkSubnet1"}, 
-          {"Ref": "SplunkSubnet2" } 
+        "Instances": [
+          { "Ref": "SplunkSHCMember1" },
+          { "Ref": "SplunkSHCMember2" },
+          { "Ref": "SplunkSHCMember3" }
         ],
-        "AvailabilityZones": [ 
-          {"Fn::GetAtt": ["SplunkSubnet1", "AvailabilityZone"] }, 
-          {"Fn::GetAtt": ["SplunkSubnet2", "AvailabilityZone"] } 
+        "Listeners": [
+          {
+            "LoadBalancerPort": "8000",
+            "InstancePort": "8000",
+            "Protocol": "tcp"
+          }
         ],
-        "MinSize": {
-          "Ref": "SHCCount"
-        },
-        "MaxSize": {
-          "Ref": "SHCCount"
-        },
-        "DesiredCapacity": {
-          "Ref": "SHCCount"
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          { "Ref": "SplunkSecurityGroup" },
+          { "Ref": "SplunkSearchHeadSecurityGroup" }
+        ],
+        "Subnets": [
+          { "Ref": "SplunkSubnet1" },
+          { "Ref": "SplunkSubnet2" }
+        ],
+        "HealthCheck": {
+          "Target": "TCP:8089",
+          "HealthyThreshold": "2",
+          "UnhealthyThreshold": "2",
+          "Interval": "20",
+          "Timeout": "5"
         }
       }
     },
@@ -1149,47 +1470,25 @@
     "SearchHeadURL": {
       "Description": "Search Head URL",
       "Value": {
-        "Fn::Join": [
-          ":",
-          [
-            {
-              "Ref": "SplunkSearchIP"
-            },
-            "8000"
-          ]
-        ]
+        "Fn::Join": [ "", [
+          "http://", { "Fn::GetAtt": [ "SplunkSHCLoadBalancer", "DNSName" ] }, ":8000"
+        ]]
       }
     },
     "LicenseServerURL": {
       "Description": "License Server URL",
       "Value": {
-        "Fn::Join": [
-          "",
-          [
-            "http://",
-            {
-              "Fn::GetAtt": [
-                "SplunkELBext",
-                "DNSName"
-              ]
-            },
-            ":8000"
-          ]
-        ]
+        "Fn::Join": [ "", [
+          "http://", { "Fn::GetAtt": [ "SplunkELBext", "DNSName" ] }, ":8000"
+        ]]
       }
     },
     "Credentials": {
       "Description": "Admin credentials for Splunk search head URL.",
       "Value": {
-        "Fn::Join": [
-          ":",
-          [
-            "admin",
-            {
-              "Ref": "SplunkAdminPassword"
-            }
-          ]
-        ]
+        "Fn::Join": [ ":", [
+          "admin", { "Ref": "SplunkAdminPassword" }
+        ]]
       }
     }
   }
