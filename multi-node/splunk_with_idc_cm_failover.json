@@ -1038,7 +1038,6 @@
             "Ref": "SplunkSubnet2"
           }
         ],
-        "LoadBalancerName": "SplunkELB",
         "HealthCheck": {
           "Target": "TCP:8089",
           "HealthyThreshold": "2",
@@ -1072,7 +1071,6 @@
             "Ref": "SplunkSubnet2"
           }
         ],
-        "LoadBalancerName": "SplunkELBext",
         "HealthCheck": {
           "Target": "TCP:8000",
           "HealthyThreshold": "2",
