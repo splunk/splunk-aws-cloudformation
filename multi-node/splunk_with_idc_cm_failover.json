@@ -23,11 +23,13 @@
       "AllowedPattern": "[a-zA-Z0-9]*",
       "ConstraintDescription": "Must be alphanumeric only.  6-32 characters"
     },
-    "LicenseURL": {
-      "Description": "URL to download Splunk License. (any web URL - e.g.: https://<s3 location>)",
-      "Type": "String",
-      "AllowedPattern": "(https?:\\/\\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?$",
-      "ConstraintDescription": "must be a valid URL - s3 URL mention..."
+    "SplunkLicenseBucket" : {
+      "Description" : "Name of private S3 bucket with licenses to be accessed via authenticated requests",
+      "Type" : "String"
+    },
+    "SplunkLicensePath" : {
+      "Description" : "Path to license file in S3 Bucket (without leading '/')",
+      "Type" : "String"
     },
     "KeyName": {
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
@@ -611,11 +613,7 @@
                 "chown -R splunk:splunk /opt/splunk/etc/\n",
                 "/opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
-                "wget -O /opt/splunk/etc/licenses/enterprise/splunk.license ",
-                {
-                  "Ref": "LicenseURL"
-                },
-                " \n",
+
                 "/opt/splunk/bin/splunk start\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
@@ -675,6 +673,50 @@
         }
       }
     },
+
+    "CfnUser" : {
+      "Type" : "AWS::IAM::User",
+      "Properties" : {
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": { "Statement":[{
+            "Effect":"Allow",
+            "Action": [
+              "cloudformation:DescribeStackResource",
+              "s3:GetObject"
+            ],
+            "Resource":"*"
+          }]}
+        }]
+      }
+    },
+
+    "CfnKeys" : {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref": "CfnUser"}
+      }
+    },
+
+    "BucketPolicy" : {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "PolicyDocument": {
+          "Version"      : "2008-10-17",
+          "Id"           : "MyPolicy",
+          "Statement"    : [{
+            "Sid"        : "ReadAccess",
+            "Action"     : ["s3:GetObject"],
+            "Effect"     : "Allow",
+            "Resource"   : { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "SplunkLicenseBucket" }, "/*"]]},
+            "Principal"  : { "AWS": {"Fn::GetAtt" : ["CfnUser", "Arn"]} }
+          }]
+        },
+        "Bucket" : { "Ref" : "SplunkLicenseBucket" }
+      }
+    },
+
     "SplunkCMLaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Metadata": {
@@ -707,8 +749,23 @@
                 "mode": "000600",
                 "owner": "root",
                 "group": "root"
+              },
+              "/etc/splunk/splunk.license" : {
+                "source" : { "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
+                "mode"  : "000600",
+                "owner" : "root",
+                "group" : "root",
+                "authentication": "S3AccessCreds"
               }
             }
+          }
+        },
+        "AWS::CloudFormation::Authentication" : {
+          "S3AccessCreds" : {
+            "type" : "S3",
+            "accessKeyId" : { "Ref" : "CfnKeys" },
+            "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+            "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
           }
         }
       },
@@ -761,11 +818,7 @@
                 "chown -R splunk.splunk /opt/splunk/\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
-                "wget -O /opt/splunk/etc/licenses/enterprise/splunk.license ",
-                {
-                  "Ref": "LicenseURL"
-                },
-                " \n",
+                "mv /etc/splunk/splunk.license /opt/splunk/etc/licenses/enterprise/\n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
                 "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
