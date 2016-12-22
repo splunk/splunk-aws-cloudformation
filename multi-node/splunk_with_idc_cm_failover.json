@@ -106,30 +106,6 @@
     }
   },
   "Resources": {
-    "User": {
-      "Type": "AWS::IAM::User",
-      "Properties": {
-        "Path": "/",
-        "Policies": [
-          {
-            "PolicyName": "AllPrivileges",
-            "PolicyDocument": {
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "*"
-                  ],
-                  "Resource": [
-                    "*"
-                  ]
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
     "AccessKey": {
       "Type": "AWS::IAM::AccessKey",
       "Properties": {
@@ -723,33 +699,6 @@
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
-              "/root/.aws/config": {
-                "content": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "[default]",
-                      "\n",
-                      "aws_access_key_id = ",
-                      {
-                        "Ref": "AccessKey"
-                      },
-                      "\n",
-                      "aws_secret_access_key = ",
-                      {
-                        "Fn::GetAtt": [
-                          "AccessKey",
-                          "SecretAccessKey"
-                        ]
-                      },
-                      "\n"
-                    ]
-                  ]
-                },
-                "mode": "000600",
-                "owner": "root",
-                "group": "root"
-              },
               "/etc/splunk/splunk.license" : {
                 "source" : { "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
                 "mode"  : "000600",
