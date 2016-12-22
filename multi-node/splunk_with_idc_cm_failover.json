@@ -4,9 +4,9 @@
   "Parameters": {
     "InstanceType": {
       "Type": "String",
-      "Default": "c4.2xlarge",
+      "Default": "c4.large",
       "AllowedValues": [
-      "c4.large",
+        "c4.large",
         "c4.2xlarge",
         "c4.4xlarge",
         "c4.8xlarge",
@@ -81,45 +81,26 @@
   },
   "Mappings": {
     "RegionMap": {
-      "ap-south-1": {
-        "AMI": "ami-f7334798"
-      },
-      "eu-west-1": {
-        "AMI": "ami-0097d073"
-      },
-      "ap-northeast-2": {
-        "AMI": "ami-9c63b6f2"
-      },
-      "ap-northeast-1": {
-        "AMI": "ami-c0479ba1"
-      },
-      "sa-east-1": {
-        "AMI": "ami-dd2ebdb1"
-      },
-      "ca-central-1": {
-        "AMI": "ami-105eec74"
-      },
-      "ap-southeast-1": {
-        "AMI": "ami-52d87c31"
-      },
-      "ap-southeast-2": {
-        "AMI": "ami-22576441"
-      },
-      "eu-central-1": {
-        "AMI": "ami-b61fe3d9"
-      },
-      "us-east-1": {
-        "AMI": "ami-231d5b34"
-      },
-      "us-east-2": {
-        "AMI": "ami-fbf5ae9e"
-      },
-      "us-west-1": {
-        "AMI": "ami-98ce80f8"
-      },
-      "us-west-2": {
-        "AMI": "ami-b8835dd8"
-      }
+      "ap-south-1": {"AMI": "ami-f7334798"},
+      "eu-west-1": {"AMI": "ami-0097d073"},
+      "ap-northeast-2": {"AMI": "ami-9c63b6f2"},
+      "ap-northeast-1": {"AMI": "ami-c0479ba1"},
+      "sa-east-1": {"AMI": "ami-dd2ebdb1"},
+      "ca-central-1": {"AMI": "ami-105eec74"},
+      "ap-southeast-1": {"AMI": "ami-52d87c31"},
+      "ap-southeast-2": {"AMI": "ami-22576441"},
+      "eu-central-1": {"AMI": "ami-b61fe3d9"},
+      "us-east-1": {"AMI": "ami-231d5b34"},
+      "us-east-2": {"AMI": "ami-fbf5ae9e"},
+      "us-west-1": {"AMI": "ami-98ce80f8"},
+      "us-west-2": {"AMI": "ami-b8835dd8"}
+    },
+    "SplunkConfig": {
+      "indexer-disk-size": {"gb": "200"},
+      "searchhead-disk-size": {"gb": "100"},
+      "cluster-secret": {"secret": "changeme"},
+      "cluster-replication-factor": {"repfactor": "2"},
+      "cluster-search-factor": {"searchfactor": "2"}
     }
   },
   "Resources": {
@@ -174,7 +155,16 @@
     "SplunkSubnet1": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
-        "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
         "VpcId": {
           "Ref": "VPC"
         },
@@ -195,8 +185,19 @@
     "SplunkSubnet2": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
-        "AvailabilityZone" : { "Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
-        "VpcId": {"Ref": "VPC"},
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAZs": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "VpcId": {
+          "Ref": "VPC"
+        },
         "MapPublicIpOnLaunch": "true",
         "CidrBlock": {
           "Ref": "SplunkSubnet2CIDR"
@@ -538,7 +539,15 @@
       "Type": "AWS::EC2::Instance",
       "DependsOn": "SplunkCMASG",
       "Properties": {
-        "ImageId": {"Fn::FindInMap": ["RegionMap", {"Ref": "AWS::Region"}, "AMI"] },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
         "SecurityGroupIds": [
           {
             "Ref": "SplunkSecurityGroup"
@@ -576,7 +585,13 @@
           {
             "DeviceName": "/dev/xvda",
             "Ebs": {
-              "VolumeSize": "50"
+              "VolumeSize": {
+                "Fn::FindInMap": [
+                  "SplunkConfig",
+                  "searchhead-disk-size",
+                  "gb"
+                ]
+              }
             }
           }
         ],
@@ -593,7 +608,7 @@
                 "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
                 "mkdir -p /opt/splunk/.splunk ; chown splunk:splunk /opt/splunk/.splunk\n",
                 "mkdir -p /opt/splunk/etc/licenses/enterprise\n",
-                "chown -R splunk.splunk /opt/splunk/etc/\n",
+                "chown -R splunk:splunk /opt/splunk/etc/\n",
                 "/opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
                 "wget -O /opt/splunk/etc/licenses/enterprise/splunk.license ",
@@ -601,15 +616,15 @@
                   "Ref": "LicenseURL"
                 },
                 " \n",
-                "/opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit user admin -password ",
+                "/opt/splunk/bin/splunk start\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
                 " -role admin -auth admin:changeme\n",
                 "touch /opt/splunk/etc/.ui_login\n",
                 "sleep 60\n",
-                "/opt/splunk/bin/splunk edit licenser-localslave -master_uri https://",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit licenser-localslave -master_uri https://",
                 {
                   "Fn::GetAtt": [
                     "SplunkELB",
@@ -621,7 +636,15 @@
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "/opt/splunk/bin/splunk edit cluster-config -secret changeme -mode searchhead -master_uri https://",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -secret ",
+                {
+                  "Fn::FindInMap": [
+                    "SplunkConfig",
+                    "cluster-secret",
+                    "secret"
+                  ]
+                },
+                " -mode searchhead -master_uri https://",
                 {
                   "Fn::GetAtt": [
                     "SplunkELB",
@@ -633,8 +656,8 @@
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "/opt/splunk/bin/splunk stop\n",
-                "/opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
                 "usermod --expiredate 1 splunk\n"
               ]
             ]
@@ -695,7 +718,7 @@
           {
             "DeviceName": "/dev/xvda",
             "Ebs": {
-              "VolumeSize": "50"
+              "VolumeSize": 50
             }
           }
         ],
@@ -731,41 +754,65 @@
                 "export INSTANCEID=$(curl http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null)\n",
                 "hostname splunklicense\n",
                 "printf '%s\t%s\n' \"$LOCALIP\" 'splunklicense' >> /etc/hosts\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk stop\n",
+                "HOME=/home/splunk /opt/splunk/bin/splunk stop\n",
                 "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
                 "mkdir -p /opt/splunk/etc/licenses/enterprise\n",
-                "mkdir -p /opt/splunk/.splunk ; chown splunk:splunk /opt/splunk/.splunk\n",
-                "chown -R splunk.splunk /opt/splunk/etc/\n",
-                "/opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
+                "mkdir -p /opt/splunk/.splunk\n",
+                "chown -R splunk.splunk /opt/splunk/\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
                 "wget -O /opt/splunk/etc/licenses/enterprise/splunk.license ",
                 {
                   "Ref": "LicenseURL"
                 },
                 " \n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit user admin -password ",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
                 " -role admin -auth admin:changeme\n",
                 "touch /opt/splunk/etc/.ui_login\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk add licenses /opt/splunk/etc/licenses/enterprise/splunk.license\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk login -auth admin:",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk add licenses /opt/splunk/etc/licenses/enterprise/splunk.license\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk login -auth admin:",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit cluster-config -mode master -secret changeme\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit cluster-config -replication_factor 2 -search_factor 2 \n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit cluster-config -cluster_label SplunkASGtest -auth admin:",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -mode master -secret ",
+                {
+                  "Fn::FindInMap": [
+                    "SplunkConfig",
+                    "cluster-secret",
+                    "secret"
+                  ]
+                },
+                "\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -replication_factor ",
+                {
+                  "Fn::FindInMap": [
+                    "SplunkConfig",
+                    "cluster-replication-factor",
+                    "repfactor"
+                  ]
+                },
+                " -search_factor ",
+                {
+                  "Fn::FindInMap": [
+                    "SplunkConfig",
+                    "cluster-search-factor",
+                    "searchfactor"
+                  ]
+                },
+                "\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -cluster_label SplunkASGtest -auth admin:",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit cluster-config -site default\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk stop\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -site default\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
                 "/opt/aws/bin/cfn-init -v ",
                 "         --stack ",
                 {
@@ -803,7 +850,7 @@
           {
             "DeviceName": "/dev/xvda",
             "Ebs": {
-              "VolumeSize": "50"
+              "VolumeSize": {"Fn::FindInMap": ["SplunkConfig", "indexer-disk-size", "gb"] }
             }
           }
         ],
@@ -812,15 +859,7 @@
             "Ref": "SplunkSecurityGroup"
           }
         ],
-        "ImageId": {
-          "Fn::FindInMap": [
-            "RegionMap",
-            {
-              "Ref": "AWS::Region"
-            },
-            "AMI"
-          ]
-        },
+        "ImageId": {"Fn::FindInMap": ["RegionMap", {"Ref": "AWS::Region"}, "AMI"] },
         "InstanceType": {
           "Ref": "InstanceType"
         },
@@ -833,9 +872,10 @@
               "",
               [
                 "#!/bin/bash -v\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk stop",
+                "exec &> /home/ec2-user/userdata.log\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
                 "mv /opt/splunk/etc/passwd /opt/splunk/etc/passwd.bak\n",
-                "mkdir -p /opt/splunk/.splunk ; chown splunk:splunk /opt/splunk/.splunk\n",
+                "mkdir -p /home/splunk/.splunk ; chown splunk:splunk /opt/splunk/.splunk\n",
                 "export LOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\n",
                 "printf '%s\t%s\n' \"",
                 {
@@ -845,10 +885,10 @@
                   ]
                 },
                 "\" 'splunksearch' >> /etc/hosts\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk enable boot-start -user splunk --accept-license --answer-yes --no-prompt\n",
                 "sed -i 's/force-change-pass true//' /etc/init.d/splunk\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit user admin -password ",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit user admin -password ",
                 {
                   "Ref": "SplunkAdminPassword"
                 },
@@ -869,7 +909,7 @@
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit licenser-localslave -master_uri https://",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit licenser-localslave -master_uri https://",
                 {
                   "Fn::GetAtt": [
                     "SplunkELB",
@@ -881,9 +921,9 @@
                   "Ref": "SplunkAdminPassword"
                 },
                 "\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk stop\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk edit cluster-config -mode slave -master_uri https://",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk edit cluster-config -mode slave -master_uri https://",
                 {
                   "Fn::GetAtt": [
                     "SplunkELB",
@@ -894,10 +934,18 @@
                 {
                   "Ref": "SplunkAdminPassword"
                 },
-                " -replication_port 9887 -secret changeme\n",
+                " -replication_port 9887 -secret ",
+                {
+                  "Fn::FindInMap": [
+                    "SplunkConfig",
+                    "cluster-secret",
+                    "secret"
+                  ]
+                },
+                "\n",
                 "printf '\n%s\n%s = %s\n' [clustering] register_replication_address  \"$LOCALIP\"''  >> /opt/splunk/etc/system/local/server.conf\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk stop\n",
-                "HOME=/opt/splunk /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk stop\n",
+                "HOME=/home/splunk sudo -u splunk /opt/splunk/bin/splunk start \n",
                 "usermod --expiredate 1 splunk\n"
               ]
             ]
