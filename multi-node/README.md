@@ -91,8 +91,8 @@ This template will create a new VPC, with either a single search head or a searc
  9. "**SplunkIndexerCount**" How many Splunk indexers would you like to create.   
  10. "**SplunkLicenseBucket**" This template uses a more secure method for retrieving the Splunk license from S3 that our other templates will be migrated to.  This field represents the bucket name where the Splunk license is found.
  11. "**SplunkLicensePath**" The (optional path) and filename of the Splunk license file in the bucket defined previously.
- 12. "**SplunkSubnet1CIDR"  This template defines two Subnets across two separate AZs.  This is the first subnet.  
- 13. "**SplunkSubnet2CIDR"  This template defines two Subnets across two separate AZs.  This is the second subnet. 
+ 12. "**SplunkSubnet1CIDR**"  This template defines two Subnets across two separate AZs.  This is the first subnet.  
+ 13. "**SplunkSubnet2CIDR**"  This template defines two Subnets across two separate AZs.  This is the second subnet. 
  14. "**SSHLocation**" The IP range here will be added to the Security group to connect on port 22.  It's recommended that you make this range as narrow as reasonably possible.  If you must allow ssh from anywhere, use 0.0.0.0/0.  
  15. "**VPCCIDR**" The network address space for the new VPC.  We recommend that this is at least a /16 to make it very simple to add /24 subnets if expansion becomes necessary.
 
