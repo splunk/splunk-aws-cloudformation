@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Splunk Cluster with auto-healing cluster master.",
+  "Description": "Splunk deployment with indexer and search head clustering, and auto-healing cluster master.",
   "Parameters": {
     "InstanceType": {
       "Type": "String",
