@@ -914,6 +914,8 @@
                   "-secret ", { "Fn::FindInMap": [ "SplunkConfig", "cluster-secret", "secret" ] }, " ",
                   "-auth admin:", { "Ref": "SplunkAdminPassword" }, "\n",
 
+                "sudo -u $SPLUNK_USER $SPLUNK_BIN restart\n",
+
                 "# Bootstrap SHC captain\n",
                 "sudo -u $SPLUNK_USER $SPLUNK_BIN bootstrap shcluster-captain ",
                   "-servers_list \"",
