@@ -27,7 +27,7 @@ This guide will show you how to launch a fully functioning Splunk deployment in 
 There are two templates to choose from: splunk_simple_deployment.json and splunk_with_idc_cm_failover.json, and each of them provide a fully functional splounk deployment.  
 
 
-*splunk_simple_deployment.json:*
+##h2 splunk_simple_deployment.json:
 The instructions that follow will create a new VPC, with a single search head and up to 10 indexers.  There will be VPC network ACLs, security groups, and an elastic IP address created as well.  Each instance type will have the appropriate security group(s) attached.  All indexers will know their license server, and the search head will configure distributed search across all indexers.  The finished architecture, using default settings, will look like this:<br>
 <img src=https://s3-us-west-2.amazonaws.com/splk-bbartlett/splunk_cf_arch.png width="510" height="500px">
 
