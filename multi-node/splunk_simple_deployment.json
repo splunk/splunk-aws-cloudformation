@@ -1,6 +1,6 @@
 {
  "AWSTemplateFormatVersion": "2010-09-09",
- "Description": "Create a small Splunk cluster.with a dynamic number of indexers.",
+ "Description": "Create a small Splunk deployment with a dynamic number of indexers.",
  "Parameters": {
   "InstanceType": {
    "Description": "Splunk EC2 instance type",

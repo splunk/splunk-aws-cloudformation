@@ -16,7 +16,7 @@
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "SplunkAdminPassword": {
-      "Description": "Admin password for Splunk. (8-32 characters, alphanumeric only",
+      "Description": "Admin password for Splunk. (6-32 characters, alphanumeric only)",
       "Type": "String",
       "MinLength": "6",
       "MaxLength": "32",
@@ -46,12 +46,12 @@
       "ConstraintDescription": "Must be a valid IP range in x.x.x.x/x notation.  Use 0.0.0.0/0 for no restrictions."
     },
     "SplunkIndexerCount": {
-      "Description": "How many Splunk indexers to launch.  [1-10]",
+      "Description": "How many Splunk indexers to launch.  [3-10]",
       "Type": "Number",
-      "MinValue": "1",
+      "MinValue": "3",
       "MaxValue": "10",
       "Default": "3",
-      "ConstraintDescription": "must be a valid number, 1-10"
+      "ConstraintDescription": "must be a valid number, 3-10"
     },
     "SHCEnabled": {
       "Description": "Do you want to build a Splunk search head cluster?",
@@ -159,7 +159,8 @@
     "SplunkSubnet2": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
-        "AvailabilityZone": {"Fn::Select": ["1", {"Fn::GetAZs": {"Ref": "AWS::Region"} } ] },
+        "AvailabilityZone": {
+          "Fn::Select": ["1", {"Fn::GetAZs": {"Ref": "AWS::Region"} } ] },
         "VpcId": {"Ref": "VPC"},
         "MapPublicIpOnLaunch": "true",
         "CidrBlock": {"Ref": "SplunkSubnet2CIDR"},
