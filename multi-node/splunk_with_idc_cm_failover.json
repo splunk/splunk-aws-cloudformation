@@ -455,18 +455,9 @@
         "InstanceType": {"Ref": "InstanceType"},
         "KeyName": {"Ref": "KeyName"},
         "Tags": [
-          {
-            "Key": "Application",
-            "Value": {"Ref": "AWS::StackId"}
-          },
-          {
-            "Key": "role",
-            "Value": "splunksearch"
-          },
-          {
-            "Key": "Name",
-            "Value": "splunksearch"
-          }
+          { "Key": "Application", "Value": {"Ref": "AWS::StackId"} },
+          { "Key": "Role", "Value": "splunk-search-head" },
+          { "Key": "Name", "Value": "search-head" }
         ],
         "BlockDeviceMappings": [
           {
@@ -564,8 +555,8 @@
         "KeyName": { "Ref": "KeyName" },
         "Tags": [
           { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
-          { "Key": "Role", "Value": "splunksearch" },
-          { "Key": "Name", "Value": "shc-deployer" }
+          { "Key": "Role", "Value": "splunk-search-head" },
+          { "Key": "Name", "Value": "deployer" }
         ],
         "BlockDeviceMappings": [
           {
@@ -639,8 +630,8 @@
         "KeyName": { "Ref": "KeyName" },
         "Tags": [
           { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
-          { "Key": "Role", "Value": "splunksearch" },
-          { "Key": "Name", "Value": "shc-sh1" }
+          { "Key": "Role", "Value": "splunk-search-head" },
+          { "Key": "Name", "Value": "search-head-1" }
         ],
         "NetworkInterfaces": [{
           "GroupSet": [
@@ -737,8 +728,8 @@
         "KeyName": { "Ref": "KeyName" },
         "Tags": [
           { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
-          { "Key": "Role", "Value": "splunksearch" },
-          { "Key": "Name", "Value": "shc-sh2" }
+          { "Key": "Role", "Value": "splunk-search-head" },
+          { "Key": "Name", "Value": "search-head-2" }
         ],
         "NetworkInterfaces": [{
           "GroupSet": [
@@ -836,8 +827,8 @@
         "KeyName": { "Ref": "KeyName" },
         "Tags": [
           { "Key": "Application", "Value": { "Ref": "AWS::StackId" } },
-          { "Key": "Role", "Value": "splunksearch" },
-          { "Key": "Name", "Value": "shc-sh3" }
+          { "Key": "Role", "Value": "splunk-search-head" },
+          { "Key": "Name", "Value": "search-head-3" }
         ],
         "NetworkInterfaces": [{
           "GroupSet": [
@@ -1306,16 +1297,9 @@
         "MaxSize": {"Ref": "SplunkIndexerCount"},
         "DesiredCapacity": {"Ref": "SplunkIndexerCount"},
         "Tags": [
-          {
-            "Key": "Application",
-            "Value": {"Ref": "AWS::StackId"},
-            "PropagateAtLaunch": true
-          },
-          {
-            "Key": "role",
-            "Value": "indexer",
-            "PropagateAtLaunch": true
-          }
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" }, "PropagateAtLaunch": true },
+          { "Key": "Role", "Value": "splunk-indexer", "PropagateAtLaunch": true },
+          { "Key": "Name", "Value": "indexer-N", "PropagateAtLaunch": true  }
         ]
       }
     },
@@ -1334,11 +1318,9 @@
         "MaxSize": "1",
         "DesiredCapacity": "1",
         "Tags": [
-          {
-            "Key": "Application",
-            "Value": {"Ref": "AWS::StackId"},
-            "PropagateAtLaunch": "true"
-          }
+          { "Key": "Application", "Value": { "Ref": "AWS::StackId" }, "PropagateAtLaunch": true },
+          { "Key": "Role", "Value": "splunk-indexer-cluster-master", "PropagateAtLaunch": true },
+          { "Key": "Name", "Value": "cluster-master", "PropagateAtLaunch": true }
         ],
         "VPCZoneIdentifier": [
           {"Ref": "SplunkSubnet1"},
