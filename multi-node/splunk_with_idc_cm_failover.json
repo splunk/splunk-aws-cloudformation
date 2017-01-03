@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Splunk deployment with indexer and search head clustering, and auto-healing cluster master.",
+  "Description": "Splunk deployment with indexer and search head clustering, with auto-healing cluster master.",
   "Parameters": {
     "InstanceType": {
       "Type": "String",
@@ -16,6 +16,7 @@
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "SplunkAdminPassword": {
+      "NoEcho": "true",
       "Description": "Admin password for Splunk. (6-32 characters, alphanumeric only)",
       "Type": "String",
       "MinLength": "6",
