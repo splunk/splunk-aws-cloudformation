@@ -131,6 +131,7 @@
         "CidrBlock": {
           "Ref": "VPCCIDR"
         },
+        "EnableDnsHostnames": true,
         "Tags": [
           {
             "Key": "Application",
@@ -1248,6 +1249,7 @@
 
     "SplunkSHCLoadBalancer": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Condition": "CreateSHC",
       "Properties": {
         "Instances": [
           { "Ref": "SplunkSHCMember1" },
@@ -1333,7 +1335,11 @@
       "Description": "Search Head URL",
       "Value": {
         "Fn::Join": [ "", [
-          "http://", { "Fn::GetAtt": [ "SplunkSHCLoadBalancer", "DNSName" ] }, ":8000"
+          "http://", { "Fn::If": [ "CreateSHC",
+            { "Fn::GetAtt": [ "SplunkSHCLoadBalancer", "DNSName" ] },
+            { "Fn::GetAtt": [ "SplunkSearchHeadInstance", "PublicDnsName" ] }
+          ]},
+          ":8000"
         ]]
       }
     },
