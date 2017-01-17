@@ -974,37 +974,38 @@
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Metadata": {
         "AWS::CloudFormation::Init": { "Fn::If": [
-        "ConfigureLicense",
-        {
-          "config": {
-            "files": {
-              "/etc/splunk/splunk.license" : {
-                "source" : { "Fn::If": [
-                  "ConfigureLicense", 
-                  {"Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
-                  {"Ref": "AWS::NoValue"}
-                ] },
-                "mode"  : "000600",
-                "owner" : "splunk",
-                "group" : "splunk",
-                "authentication": "S3AccessCreds"
+          "ConfigureLicense",
+          {
+            "config": {
+              "files": {
+                "/etc/splunk/splunk.license" : {
+                  "source" : { "Fn::If": [
+                    "ConfigureLicense", 
+                    {"Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
+                    {"Ref": "AWS::NoValue"}
+                  ] },
+                  "mode"  : "000600",
+                  "owner" : "splunk",
+                  "group" : "splunk",
+                  "authentication": "S3AccessCreds"
+                }
               }
             }
-          }
-        }, { "Ref" : "AWS::NoValue" }] },
+          },
+          { "Ref" : "AWS::NoValue" }
+        ]},
         "AWS::CloudFormation::Authentication": { "Fn::If": [
           "ConfigureLicense",
-        {
-          "S3AccessCreds" : {
-            "type" : "S3",
-            "accessKeyId" : { "Ref" : "CfnKeys" },
-            "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
-            "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
-          }
-        },
-        { "Ref" : "AWS::NoValue" }
-        ]
-        }
+          {
+            "S3AccessCreds" : {
+              "type" : "S3",
+              "accessKeyId" : { "Ref" : "CfnKeys" },
+              "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+              "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
+            }
+          },
+          { "Ref" : "AWS::NoValue" }
+        ]}
       },
       "Properties": {
         "AssociatePublicIpAddress": true,
