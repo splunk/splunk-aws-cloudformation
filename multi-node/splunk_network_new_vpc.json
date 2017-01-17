@@ -1,20 +1,15 @@
 {
-  "AWSTemplateFormatVersion" : "2010-09-09",
- 	 "Description" : "Splunk network configuration for an AWS deployment with a new VPC.  This template creates both the VPC Network ACL and relevant security groups."
-
- 	 "Resources": {
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Splunk network configuration for an AWS deployment with a new VPC.  This template creates both the VPC Network ACL and relevant security groups.",
+  "Resources": {
     "VPC": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
-        "CidrBlock": {
-          "Ref": "VPCCIDR"
-        },
+        "CidrBlock": {"Ref": "VPCCIDR"},
         "Tags": [
           {
             "Key": "Application",
-            "Value": {
-              "Ref": "AWS::StackId"
-            }
+            "Value": {"Ref": "AWS::StackId"}
           }
         ]
       }
@@ -39,7 +34,8 @@
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "AvailabilityZone": {
-          "Fn::Select": ["1", {"Fn::GetAZs": {"Ref": "AWS::Region"} } ] },
+          "Fn::Select": ["1", {"Fn::GetAZs": {"Ref": "AWS::Region"} } ]
+        },
         "VpcId": {"Ref": "VPC"},
         "MapPublicIpOnLaunch": "true",
         "CidrBlock": {"Ref": "SplunkSubnet2CIDR"},
@@ -139,9 +135,7 @@
         "Protocol": "6",
         "RuleAction": "allow",
         "Egress": "false",
-        "CidrBlock": {
-          "Ref": "SSHLocation"
-        },
+        "CidrBlock": {"Ref": "SSHLocation"},
         "PortRange": {
           "From": "22",
           "To": "22"
@@ -156,9 +150,7 @@
         "Protocol": "17",
         "RuleAction": "allow",
         "Egress": "false",
-        "CidrBlock": {
-          "Ref": "SSHLocation"
-        },
+        "CidrBlock": {"Ref": "SSHLocation"},
         "PortRange": {
           "From": "514",
           "To": "514"
@@ -244,24 +236,22 @@
       "Type": "AWS::EC2::SubnetNetworkAclAssociation",
       "Properties": {
         "SubnetId": {"Ref": "SplunkSubnet1"},
-        "NetworkAclId": {
-          "Ref": "SplunkNetworkAcl"
-        }
+        "NetworkAclId": {"Ref": "SplunkNetworkAcl"}
       }
     },
     "Subnet2NetworkAclAssociation": {
       "Type": "AWS::EC2::SubnetNetworkAclAssociation",
       "Properties": {
         "SubnetId": {"Ref": "SplunkSubnet2"},
-        "NetworkAclId": {
-          "Ref": "SplunkNetworkAcl"
-        }
+        "NetworkAclId": {"Ref": "SplunkNetworkAcl"}
       }
     },
     "SplunkSearchHeadSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "VpcId": {"Ref": "VPC"},
+        "VpcId": {
+          "Ref": "VPC"
+        },
         "GroupDescription": "Enable port 8000 for Splunk web interface",
         "SecurityGroupIngress": [
           {
@@ -317,6 +307,6 @@
           }
         ]
       }
-    },
-
+    }
+  }
 }
