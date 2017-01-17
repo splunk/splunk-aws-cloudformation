@@ -98,22 +98,7 @@
   },
   "Conditions" : {
     "CreateSingleSearchHead" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "no"]},
-    "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "yes"]},
-<<<<<<< HEAD
-    "HasLicenseBucket": {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
-    "HasLicensePath": {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]},
-    "LicenseConfigured": {"Fn::And":
-      [ 
-        {"Condition": "HasLicenseBucket"},
-        {"Condition": "HasLicensePath"}
-=======
-    "ConfigureLicense": {"Fn::And":
-      [ 
-        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
-        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]}
->>>>>>> e14d095b7b1f05fbaac435185f33d6ca912933cf
-      ]
-    }
+    "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "yes"]}
   },
   "Mappings": {
     "RegionMap": {
@@ -935,7 +920,6 @@
 
     "CfnUser" : {
       "Type" : "AWS::IAM::User",
-      "Condition": "ConfigureLicense",
       "Properties" : {
         "Path": "/",
         "Policies": [{
@@ -954,7 +938,6 @@
 
     "CfnKeys" : {
       "Type" : "AWS::IAM::AccessKey",
-      "Condition": "ConfigureLicense",
       "Properties" : {
         "UserName" : {"Ref": "CfnUser"}
       }
@@ -962,11 +945,6 @@
 
     "BucketPolicy" : {
       "Type" : "AWS::S3::BucketPolicy",
-<<<<<<< HEAD
-      "Condition": "LicenseConfigured",
-=======
-      "Condition": "ConfigureLicense",
->>>>>>> e14d095b7b1f05fbaac435185f33d6ca912933cf
       "Properties" : {
         "PolicyDocument": {
           "Version"      : "2008-10-17",
@@ -986,56 +964,27 @@
     "SplunkCMLaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Metadata": {
-<<<<<<< HEAD
         "AWS::CloudFormation::Init": {
           "config": {
             "files": {
               "/etc/splunk/splunk.license" : {
-                "source" : { "Fn::If": [
-                  "LicenseConfigured", 
-                    "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
-                  {"Ref": "AWS::NoValue"}
-                ]
-              }
+                "source" : { "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
                 "mode"  : "000600",
                 "owner" : "splunk",
                 "group" : "splunk",
                 "authentication": "S3AccessCreds"
-=======
-        "AWS::CloudFormation::Init": { "Fn::If": [
-          "ConfigureLicense",
-          {
-            "config": {
-              "files": {
-                "/etc/splunk/splunk.license" : {
-                  "source" : { "Fn::If": [
-                    "ConfigureLicense", 
-                    {"Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
-                    {"Ref": "AWS::NoValue"}
-                  ] },
-                  "mode"  : "000600",
-                  "owner" : "splunk",
-                  "group" : "splunk",
-                  "authentication": "S3AccessCreds"
-                }
->>>>>>> e14d095b7b1f05fbaac435185f33d6ca912933cf
               }
             }
-          },
-          { "Ref" : "AWS::NoValue" }
-        ]},
-        "AWS::CloudFormation::Authentication": { "Fn::If": [
-          "ConfigureLicense",
-          {
-            "S3AccessCreds" : {
-              "type" : "S3",
-              "accessKeyId" : { "Ref" : "CfnKeys" },
-              "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
-              "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
-            }
-          },
-          { "Ref" : "AWS::NoValue" }
-        ]}
+          }
+        },
+        "AWS::CloudFormation::Authentication" : {
+          "S3AccessCreds" : {
+            "type" : "S3",
+            "accessKeyId" : { "Ref" : "CfnKeys" },
+            "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+            "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
+          }
+        }
       },
       "Properties": {
         "AssociatePublicIpAddress": true,
