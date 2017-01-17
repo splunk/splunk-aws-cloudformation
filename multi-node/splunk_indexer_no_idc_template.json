@@ -6,7 +6,13 @@
       "Type": "AWS::EC2::Instance",
       "Properties": {
         "ImageId": {
-          "Fn::FindInMap": ["RegionMap", {"Ref": "AWS::Region"}, "AMI"]
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
         },
         "SecurityGroupIds": [
           {
@@ -16,9 +22,13 @@
             "Ref": "SplunkSearchHeadSecurityGroup"
           }
         ],
-        "SubnetId": {"Ref": "SplunkSubnet"},
+        "SubnetId": {
+          "Ref": "SplunkSubnet"
+        },
         "InstanceType": "c3.xlarge",
-        "KeyName": {"Ref": "KeyName"},
+        "KeyName": {
+          "Ref": "KeyName"
+        },
         "Tags": [
           {
             "Key": "Application",
@@ -84,7 +94,13 @@
         ],
         "SecurityGroups": [{"Ref": "SplunkSecurityGroup"} ],
         "ImageId": {
-          "Fn::FindInMap": ["RegionMap", {"Ref": "AWS::Region"}, "AMI"]
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
         },
         "InstanceType": {"Ref": "InstanceType"},
         "KeyName": {"Ref": "KeyName"},
@@ -153,17 +169,18 @@
     "SplunkIndexerNodesASG": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
-        "VPCZoneIdentifier": [
-          {
-            "Ref": "SplunkSubnet"
-          }
-        ],
+        "VPCZoneIdentifier": [{"Ref": "SplunkSubnet"} ],
         "AvailabilityZones": [
           {
-            "Fn::GetAtt": ["SplunkSubnet", "AvailabilityZone"]
+            "Fn::GetAtt": [
+              "SplunkSubnet",
+              "AvailabilityZone"
+            ]
           }
         ],
-        "LaunchConfigurationName": {"Ref": "SplunkIndexerLaunchConfiguration"},
+        "LaunchConfigurationName": {
+          "Ref": "SplunkIndexerLaunchConfiguration"
+        },
         "MinSize": {"Ref": "SplunkIndexerCount"},
         "MaxSize": {"Ref": "SplunkIndexerCount"},
         "DesiredCapacity": {"Ref": "SplunkIndexerCount"},
