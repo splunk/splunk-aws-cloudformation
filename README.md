@@ -25,5 +25,5 @@ Directory | Description
 
 ## License ##
 
-The Splunk AWS CloudFormation is licensed under the MIT License. Details can be found in the file LICENSE.
+The Splunk AWS CloudFormation is licensed under the Apache License, Version 2.0. Details can be found in the file LICENSE.
 
