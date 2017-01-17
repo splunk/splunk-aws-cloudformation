@@ -99,12 +99,10 @@
   "Conditions" : {
     "CreateSingleSearchHead" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "no"]},
     "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "yes"]},
-    "HasLicenseBucket": {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
-    "HasLicensePath": {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]},
-    "LicenseConfigured": {"Fn::And":
+    "ConfigureLicense": {"Fn::And":
       [ 
-        {"Condition": "HasLicenseBucket"},
-        {"Condition": "HasLicensePath"}
+        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
+        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]}
       ]
     }
   },
@@ -953,7 +951,7 @@
 
     "BucketPolicy" : {
       "Type" : "AWS::S3::BucketPolicy",
-      "Condition": "LicenseConfigured",
+      "Condition": "ConfigureLicense",
       "Properties" : {
         "PolicyDocument": {
           "Version"      : "2008-10-17",
@@ -978,11 +976,10 @@
             "files": {
               "/etc/splunk/splunk.license" : {
                 "source" : { "Fn::If": [
-                  "LicenseConfigured", 
-                    "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
+                  "ConfigureLicense", 
+                  {"Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
                   {"Ref": "AWS::NoValue"}
-                ]
-              }
+                ] },
                 "mode"  : "000600",
                 "owner" : "splunk",
                 "group" : "splunk",
