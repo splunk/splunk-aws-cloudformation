@@ -926,6 +926,7 @@
 
     "CfnUser" : {
       "Type" : "AWS::IAM::User",
+      "Condition": "ConfigureLicense",
       "Properties" : {
         "Path": "/",
         "Policies": [{
@@ -944,6 +945,7 @@
 
     "CfnKeys" : {
       "Type" : "AWS::IAM::AccessKey",
+      "Condition": "ConfigureLicense",
       "Properties" : {
         "UserName" : {"Ref": "CfnUser"}
       }
@@ -971,7 +973,9 @@
     "SplunkCMLaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Metadata": {
-        "AWS::CloudFormation::Init": {
+        "AWS::CloudFormation::Init": { "Fn::If": [
+        "ConfigureLicense",
+        {
           "config": {
             "files": {
               "/etc/splunk/splunk.license" : {
@@ -987,14 +991,19 @@
               }
             }
           }
-        },
-        "AWS::CloudFormation::Authentication" : {
+        }, { "Ref" : "AWS::NoValue" }] },
+        "AWS::CloudFormation::Authentication": { "Fn::If": [
+          "ConfigureLicense",
+        {
           "S3AccessCreds" : {
             "type" : "S3",
             "accessKeyId" : { "Ref" : "CfnKeys" },
             "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
             "buckets" : [ { "Ref" : "SplunkLicenseBucket" } ]
           }
+        },
+        { "Ref" : "AWS::NoValue" }
+        ]
         }
       },
       "Properties": {
