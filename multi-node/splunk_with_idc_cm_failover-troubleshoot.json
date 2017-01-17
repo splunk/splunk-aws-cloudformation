@@ -971,26 +971,27 @@
     },
 
     "SplunkCMLaunchConfiguration": {
-      "Type": "AWS::AutoScaling::LaunchConfiguration",
-      "Metadata": {
-        "AWS::CloudFormation::Init": {
-          "config": {
-            "files": {
-              "/etc/splunk/splunk.license" : {
-                "source" : { "Fn::If": [
-                  "LicenseConfigured", 
-                    "Fn::Join" : ["", ["https://" , { "Ref" : "SplunkLicenseBucket" }, ".s3.amazonaws.com/", { "Ref" : "SplunkLicensePath" }]]},
-                  {"Ref": "AWS::NoValue"}
+    "Type": "AWS::AutoScaling::LaunchConfiguration",
+    "Metadata": {
+      "AWS::CloudFormation::Init": {
+        "config": {
+          "files": {
+            "/etc/splunk/splunk.license": {
+              "source": {
+                "Fn::If": [
+                  "LicenseConfigured", {
+                    "Fn::Join": ["", ["https://", {"Ref": "SplunkLicenseBucket"}, ".s3.amazonaws.com/", {"Ref": "SplunkLicensePath"} ] ]
+                  }, {"Ref": "AWS::NoValue"}
                 ]
-              }
-                "mode"  : "000600",
-                "owner" : "splunk",
-                "group" : "splunk",
-                "authentication": "S3AccessCreds"
-              }
+              },
+              "mode": "000600",
+              "owner": "splunk",
+              "group": "splunk",
+              "authentication": "S3AccessCreds"
             }
           }
-        },
+        }
+      },
         "AWS::CloudFormation::Authentication" : {
           "S3AccessCreds" : {
             "type" : "S3",
