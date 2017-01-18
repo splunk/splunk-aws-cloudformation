@@ -346,5 +346,31 @@
         ]
       }
     }
+  },
+  "Outputs": {
+    "VPCID": {
+      "Description": "VPC ID",
+      "Value": {"Ref": "VPC"}
+    },
+    "VPCCIDR": {
+      "Description": "VPC CIDR",
+      "Value": {"Ref": "VPCCIDR"}
+    },
+    "PublicSubnet1ID": {
+      "Description": "Public subnet 1 ID in Availability Zone 1",
+      "Value": {"Ref": "SplunkSubnet1"}
+    },
+    "PublicSubnet1CIDR": {
+        "Description": "Public subnet 1 CIDR in Availability Zone 1",
+        "Value": {"Ref": "SplunkSubnet1CIDR"}
+    },
+    "PublicSubnet2ID": {
+      "Description": "Public subnet 2 ID in Availability Zone 2",
+      "Value": {"Ref": "SplunkSubnet2"}
+    },
+    "PublicSubnet2CIDR": {
+        "Description": "Public subnet 2 CIDR in Availability Zone 2",
+        "Value": {"Ref": "SplunkSubnet2CIDR"}
+    }
   }
 }
