@@ -193,7 +193,7 @@
     "SplunkSearchHeadInstance": {
       "Type": "AWS::EC2::Instance",
       "Condition": "CreateSingleSearchHead",
-      "DependsOn": ["AttachGateway", "SplunkCMASG"],
+      "DependsOn": "SplunkCMASG",
       "Properties": {
         "ImageId": {
           "Fn::FindInMap": ["RegionMap", {"Ref": "AWS::Region"}, "AMI"]
@@ -306,7 +306,7 @@
     "SplunkSHCDeployer": {
       "Type": "AWS::EC2::Instance",
       "Condition": "CreateSHC",
-      "DependsOn": ["AttachGateway", "SplunkCMASG"],
+      "DependsOn": "SplunkCMASG",
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
         "SecurityGroupIds": [
@@ -381,7 +381,7 @@
     "SplunkSHCMember1": {
       "Type": "AWS::EC2::Instance",
       "Condition": "CreateSHC",
-      "DependsOn": ["AttachGateway", "SplunkSHCDeployer"],
+      "DependsOn": "SplunkSHCDeployer",
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
         "InstanceType": { "Ref": "InstanceType" },
@@ -474,7 +474,7 @@
     "SplunkSHCMember2": {
       "Type": "AWS::EC2::Instance",
       "Condition": "CreateSHC",
-      "DependsOn": ["AttachGateway", "SplunkSHCDeployer"],
+      "DependsOn": "SplunkSHCDeployer",
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
         "InstanceType": { "Ref": "InstanceType" },
@@ -567,7 +567,7 @@
     "SplunkSHCMember3": {
       "Type": "AWS::EC2::Instance",
       "Condition": "CreateSHC",
-      "DependsOn": ["AttachGateway", "SplunkSHCDeployer"],
+      "DependsOn": "SplunkSHCDeployer",
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "RegionMap", { "Ref": "AWS::Region" }, "AMI" ] },
         "InstanceType": { "Ref": "InstanceType" },
@@ -934,7 +934,6 @@
     },
     "SplunkELB": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "DependsOn": "AttachGateway",
       "Properties": {
         "Listeners": [
           {
@@ -968,7 +967,6 @@
     },
     "SplunkELBext": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "DependsOn": "AttachGateway",
       "Properties": {
         "Listeners": [
           {
@@ -998,7 +996,6 @@
     "SplunkSHCLoadBalancer": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Condition": "CreateSHC",
-      "DependsOn": "AttachGateway",
       "Properties": {
         "Instances": [
           { "Ref": "SplunkSHCMember1" },
@@ -1032,7 +1029,7 @@
     },
     "SplunkIndexerNodesASG": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
-      "DependsOn": ["AttachGateway", "SplunkCMASG"],
+      "DependsOn": "SplunkCMASG",
       "Properties": {
         "VPCZoneIdentifier": [ 
           {"Ref": "PublicSubnet1ID"}, 
@@ -1061,7 +1058,7 @@
     },
     "SplunkCMASG": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
-      "DependsOn": ["AttachGateway", "SplunkELB"],
+      "DependsOn": "SplunkELB",
       "Properties": {
         "LaunchConfigurationName": {"Ref": "SplunkCMLaunchConfiguration"},
         "LoadBalancerNames": [
