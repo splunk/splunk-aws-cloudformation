@@ -1,5 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Type" : "AWS::CloudFormation::Stack",
   "Description": "Splunk network configuration for an AWS deployment with a new VPC.  This template creates both the VPC Network ACL and relevant security groups.",
   "Resources": {
     "VPC": {
