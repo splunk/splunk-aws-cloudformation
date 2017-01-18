@@ -140,10 +140,16 @@
     }
   },
 "Resources": {
-    "VPC": {
+    "VPCStack": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
         "TemplateURL": "https://s3.amazonaws.com/splk-cf-stacks/splunk_network_new_vpc.json",
+        "Parameters" : {
+                 "SSHLocation" : { "Ref": "SSHLocation" },
+                 "SplunkSubnet1CIDR" : { "Ref": "SplunkSubnet1CIDR" },
+                 "SplunkSubnet2CIDR" : { "Ref": "SplunkSubnet2CIDR" },
+                 "VPCCIDR": { "Ref": "VPCCIDR"}
+                 },
         "TimeoutInMinutes": "5"
       }
     }
