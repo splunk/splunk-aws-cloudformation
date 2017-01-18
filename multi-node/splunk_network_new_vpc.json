@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Splunk network configuration for an AWS deployment with a new VPC.  This template creates both the VPC Network ACL and relevant security groups.",
+  "Description": "Splunk network configuration for an AWS deployment with a new VPC, two public subnets and associated ACLs",
   "Parameters": {
     "SSHLocation": {
       "Description": "The IP address range that is allowed to SSH to the EC2 instances",
@@ -282,68 +282,6 @@
       "Properties": {
         "SubnetId": {"Ref": "SplunkSubnet2"},
         "NetworkAclId": {"Ref": "SplunkNetworkAcl"}
-      }
-    },
-    "SplunkSearchHeadSecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "VpcId": {
-          "Ref": "VPC"
-        },
-        "GroupDescription": "Enable port 8000 for Splunk web interface",
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "8000",
-            "ToPort": "8000",
-            "CidrIp": {"Ref": "SSHLocation"}
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "8090",
-            "ToPort": "8090",
-            "CidrIp": {"Ref": "VPCCIDR"}
-          }
-        ]
-      }
-    },
-    "SplunkSecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "VpcId": {"Ref": "VPC"},
-        "GroupDescription": "Enable SSH, and all Splunk-related ports except web interface",
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "22",
-            "ToPort": "22",
-            "CidrIp": {"Ref": "SSHLocation"}
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "8089",
-            "ToPort": "8089",
-            "CidrIp": {"Ref": "VPCCIDR"}
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "9997",
-            "ToPort": "9997",
-            "CidrIp": {"Ref": "VPCCIDR"}
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "9887",
-            "ToPort": "9887",
-            "CidrIp": {"Ref": "VPCCIDR"}
-          },
-          {
-            "IpProtocol": "udp",
-            "FromPort": "514",
-            "ToPort": "514",
-            "CidrIp": {"Ref": "VPCCIDR"}
-          }
-        ]
       }
     }
   },
