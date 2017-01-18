@@ -122,7 +122,7 @@
     "SplunkStack": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
-        "TemplateURL": "https://raw.githubusercontent.com/splunk/splunk-aws-cloudformation/dev/multi-node/splunk_nested.json",
+        "TemplateURL": "https://s3.amazonaws.com/splk-cf-stacks/splunk_nested.json",
         "Parameters" : {
            "VPCID": { "Fn::GetAtt": [ "VPCStack", "Outputs.VPCID"] },
            "VPCCIDR": { "Fn::GetAtt": [ "VPCStack", "Outputs.VPCCIDR"] },
