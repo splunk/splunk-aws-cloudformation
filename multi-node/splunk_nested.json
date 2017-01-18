@@ -125,7 +125,7 @@
     "SplunkSearchHeadSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "VpcId": {"Ref": "VPC"},
+        "VpcId": {"Ref": "VPCID"},
         "GroupDescription": "Enable port 8000 for Splunk web interface",
         "SecurityGroupIngress": [
           {
@@ -150,7 +150,7 @@
     "SplunkSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "VpcId": {"Ref": "VPC"},
+        "VpcId": {"Ref": "VPCID"},
         "GroupDescription": "Enable SSH, and all Splunk-related ports except web interface",
         "SecurityGroupIngress": [
           {
@@ -1035,10 +1035,6 @@
           {"Ref": "PublicSubnet1ID"}, 
           {"Ref": "PublicSubnet2ID" } 
         ],
-        "AvailabilityZones": [ 
-          {"Fn::GetAtt": ["PublicSubnet1ID", "AvailabilityZone"] }, 
-          {"Fn::GetAtt": ["PublicSubnet2ID", "AvailabilityZone"] } 
-        ],
         "LaunchConfigurationName": {"Ref": "SplunkIndexerLaunchConfiguration"},
         "MinSize": {"Ref": "SplunkIndexerCount"},
         "MaxSize": {"Ref": "SplunkIndexerCount"},
@@ -1060,6 +1056,10 @@
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "DependsOn": "SplunkELB",
       "Properties": {
+        "VPCZoneIdentifier": [
+          {"Ref": "PublicSubnet1ID"},
+          {"Ref": "PublicSubnet2ID"}
+        ],
         "LaunchConfigurationName": {"Ref": "SplunkCMLaunchConfiguration"},
         "LoadBalancerNames": [
           {"Ref": "SplunkELB"},
@@ -1074,10 +1074,6 @@
           { "Key": "Application", "Value": { "Ref": "AWS::StackId" }, "PropagateAtLaunch": true },
           { "Key": "Role", "Value": "splunk-indexer-cluster-master", "PropagateAtLaunch": true },
           { "Key": "Name", "Value": "cluster-master", "PropagateAtLaunch": true }
-        ],
-        "VPCZoneIdentifier": [
-          {"Ref": "PublicSubnet1ID"},
-          {"Ref": "PublicSubnet2ID"}
         ]
       },
       "CreationPolicy": {

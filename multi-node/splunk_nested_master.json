@@ -121,6 +121,7 @@
     },
     "SplunkStack": {
       "Type": "AWS::CloudFormation::Stack",
+      "DependsOn": "VPCStack",
       "Properties": {
         "TemplateURL": "https://s3.amazonaws.com/splk-cf-stacks/splunk_nested.json",
         "Parameters" : {
