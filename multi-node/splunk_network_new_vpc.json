@@ -1,6 +1,44 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Splunk network configuration for an AWS deployment with a new VPC.  This template creates both the VPC Network ACL and relevant security groups.",
+  "Parameters": {
+    "SSHLocation": {
+      "Description": "The IP address range that is allowed to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "19",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "Must be a valid IP range in x.x.x.x/x notation.  Use 0.0.0.0/0 for no restrictions."
+    },
+    "VPCCIDR": {
+      "Description": "The address space that will be assigned to the entire VPC where Splunk will reside. (Recommend at least a /16)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "19",
+      "Default": "10.0.0.0/16",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+     },
+    "SplunkSubnet1CIDR": {
+      "Description": "The address space that will be assigned to the first Splunk server subnet. (x.x.x.x/x notation)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "19",
+      "Default": "10.0.0.0/24",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "SplunkSubnet2CIDR": {
+      "Description": "The address space that will be assigned to the second Splunk server subnet. (x.x.x.x/x notation)",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "19",
+      "Default": "10.0.1.0/24",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
+  },
   "Resources": {
     "VPC": {
       "Type": "AWS::EC2::VPC",
