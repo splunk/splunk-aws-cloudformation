@@ -105,6 +105,22 @@
       "ConstraintDescription": "Must be alphanumeric only.  6-32 characters"
     }
   },
+  "Metadata": {
+    "AWS::CloudFormation::Interface" : 
+    {
+      "ParameterGroups" : 
+      [
+        {
+          "Label" : { "default" : "AWS Instance and Network Settings" },
+          "Parameters" : [ "InstanceType", "KeyName", "SSHLocation", "VPCCIDR", "SplunkSubnet1CIDR", "SplunkSubnet2CIDR"]
+        },
+        {
+          "Label" : { "default" : "Splunk Settings" },
+          "Parameters" : [ "SplunkAdminPassword", "SplunkLicenseBucket", "SplunkLicensePath", "SplunkIndexerCount", "SHCEnabled", "SHCCount"]
+        }
+      ]
+    }
+  },
   "Resources": {
     "VPCStack": {
       "Type": "AWS::CloudFormation::Stack",
