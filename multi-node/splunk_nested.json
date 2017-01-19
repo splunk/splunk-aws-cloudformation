@@ -20,6 +20,7 @@
       "Type": "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription": "Must be the name of an existing EC2 KeyPair."
     },
+    
     "SSHLocation": {
       "Description": "The IP address range that is allowed to SSH to the EC2 instances",
       "Type": "String",
@@ -94,6 +95,21 @@
       "MaxValue": "10",
       "Default": "3",
       "ConstraintDescription": "must be a valid number, 3-10"
+    },
+    "QSS3BucketName": {
+      "Description": "S3 bucket name for the Quick Start assets.",
+      "Type": "String",
+      "Default": "quickstart-reference"
+    },
+    "QSS3KeyPrefix": {
+      "Description": "S3 key prefix for the Quick Start assets.",
+      "Type": "String",
+      "Default": "latest"
+    },
+    "QuickStartS3URL": {
+      "Description": "Used to dynamically generate URLs for subtemplates.",
+      "Type": "String",
+      "Default": "https://s3.amazonaws.com"
     }
       },
   "Conditions" : {
