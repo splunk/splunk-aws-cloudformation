@@ -111,14 +111,34 @@
       "Type": "String",
       "Default": "https://s3.amazonaws.com"
     }
-      },
+  },
+  "Metadata": {
+    "AWS::CloudFormation::Interface" : 
+    {
+      "ParameterGroups" : 
+      [
+        {
+          "Label" : { "default" : "AWS Instance and Network Settings" },
+          "Parameters" : [ "InstanceType", "KeyName", "SSHLocation", "VPCID", "VPCCIDR", "PublicSubnet1ID", "PublicSubnet2ID"]
+        },
+        {
+          "Label" : { "default" : "Splunk Settings" },
+          "Parameters" : [ "SplunkAdminPassword", "SplunkSecret", "SplunkLicenseBucket", "SplunkLicensePath", "SplunkIndexerCount", "SHCEnabled", "SHCCount"]
+        },
+        {
+          "Label" : { "default" : "Quickstart Settings" },
+          "Parameters": [ "QSS3BucketName", "QSS3KeyPrefix", "QuickStartS3URL"]
+        }
+      ]
+    }
+  },
   "Conditions" : {
     "CreateSingleSearchHead" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "no"]},
     "CreateSHC" : {"Fn::Equals" : [{"Ref" : "SHCEnabled"}, "yes"]},
     "ConfigureLicense": {"Fn::And":
       [ 
-        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
-        {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]}
+       {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicenseBucket"}]}]},
+       {"Fn::Not": [{"Fn::Equals": ["", {"Ref": "SplunkLicensePath"}]}]}
       ]
     }
   },
