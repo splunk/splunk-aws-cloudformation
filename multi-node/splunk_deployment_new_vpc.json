@@ -109,7 +109,7 @@
     "VPCStack": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
-        "TemplateURL": "https://s3.amazonaws.com/splk-cf-stacks/splunk_network_new_vpc.json",
+        "TemplateURL": "https://s3.amazonaws.com/splk-cf-stacks/splunk_network.json",
         "Parameters" : {
            "SSHLocation" : { "Ref": "SSHLocation" },
            "SplunkSubnet1CIDR" : { "Ref": "SplunkSubnet1CIDR" },
