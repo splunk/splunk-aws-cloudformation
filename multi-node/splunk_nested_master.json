@@ -116,7 +116,7 @@
            "SplunkSubnet2CIDR" : { "Ref": "SplunkSubnet2CIDR" },
            "VPCCIDR": { "Ref": "VPCCIDR"}
          },
-        "TimeoutInMinutes": "5"
+        "TimeoutInMinutes": "15"
       }
     },
     "SplunkStack": {
