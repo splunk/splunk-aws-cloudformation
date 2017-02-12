@@ -1,0 +1,4 @@
+[submodule "multi-node"]
+	path = multi-node
+	url = git@github.com:aws-quickstart/quickstart-splunk-enterprise.git
+    branch = master
