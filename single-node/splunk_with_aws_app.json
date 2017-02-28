@@ -15,6 +15,7 @@
   },
   "SplunkAdminPassword": {
    "Description": "Admin password for Splunk. (8-32 characters, alphanumeric only)",
+   "NoEcho": "true",
    "Type": "String",
    "MinLength": "8",
    "MaxLength": "32",
@@ -22,12 +23,9 @@
    "ConstraintDescription": "Must be alphanumeric only.  8-32 characters"
   },
   "KeyName": {
-   "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
-   "Type": "String",
-   "MinLength": "1",
-   "MaxLength": "255",
-   "AllowedPattern": "[\\x20-\\x7E]*",
-   "ConstraintDescription": "can contain only ASCII characters."
+    "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+    "Type": "AWS::EC2::KeyPair::KeyName",
+    "ConstraintDescription": "Must be the name of an existing EC2 KeyPair."
   },
   "SSHLocation": {
    "Description": " The IP address range that is allowed to SSH to the EC2 instances",
