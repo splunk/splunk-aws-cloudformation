@@ -386,14 +386,6 @@
       }
      },
      {
-      "IpProtocol": "tcp",
-      "FromPort": "9997",
-      "ToPort": "9997",
-      "CidrIp": {
-       "Ref": "SSHLocation"
-      }
-     },
-     {
       "IpProtocol": "udp",
       "FromPort": "514",
       "ToPort": "514",
