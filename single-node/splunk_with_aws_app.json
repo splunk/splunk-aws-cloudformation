@@ -76,7 +76,9 @@
   "VPC": {
    "Type": "AWS::EC2::VPC",
    "Properties": {
-    "CidrBlock": "10.0.0.0/16",
+    "CidrBlock": {
+      "Ref": "SplunkVPCCIDR"
+    },
     "Tags": [
      {
       "Key": "Application",
