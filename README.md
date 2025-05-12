@@ -1,3 +1,5 @@
+# On 12th May 2025 repository has been ARCHIVED. No activity since 2017.
+
 # Splunk AWS CloudFormation #
 
 Easy-to-use AWS CloudFormation templates to deploy pre-configured Splunk single instance or distributed cluster on AWS.
